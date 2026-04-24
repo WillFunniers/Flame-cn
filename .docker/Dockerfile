@@ -1,10 +1,11 @@
-FROM node:20 as builder
+FROM node:20-alpine as builder
 
 WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm install --production
+RUN apk --no-cache --virtual build-dependencies add python3 make g++ \
+    && npm install --production
 
 COPY . .
 
