@@ -1,3 +1,6 @@
+### v2.4.0 (2026-04-24)
+- Fixed high severity authentication security issues ([#465](https://github.com/pawelmalak/flame/issues/465))
+
 ### v2.3.1 (2023-07-23)
 - Fixed bug where "Open search results in the same tab" setting was not respected if "Local search" was set as primary search provider ([#270](https://github.com/pawelmalak/flame/issues/270))
 - Fixed bug where search bar had rounded input field on iOS ([#394](https://github.com/pawelmalak/flame/issues/394))
