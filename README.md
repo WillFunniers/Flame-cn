@@ -35,7 +35,7 @@ docker pull pawelmalak/flame:2.0.0
 
 ```sh
 # run container
-docker run -p 5005:5005 -v /path/to/data:/app/data -e PASSWORD=flame_password pawelmalak/flame
+docker run -p 5005:5005 -v /path/to/data:/app/data -e PASSWORD=change_me pawelmalak/flame
 ```
 
 #### Building images
@@ -69,7 +69,7 @@ services:
     secrets:
       - password # optional but required for (1)
     environment:
-      - PASSWORD=flame_password
+      - PASSWORD=change_me
       - PASSWORD_FILE=/run/secrets/password # optional but required for (1)
     restart: unless-stopped
 
