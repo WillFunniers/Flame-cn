@@ -52,10 +52,11 @@
 
 **PASS**
 
-- **最终镜像**：`localhost/flame-zh:phase1`，ID `0bb9e63e42f3`（227 MB）
+- **最终镜像**：`localhost/flame-zh:phase1`，ID `a638594c5913`（228 MB）
 - **命令（使用仓库中未修改的 `.docker/Dockerfile`）**：
   `podman build --network=host -f .docker/Dockerfile -t flame-zh:phase1 .`
-- 耗时 4m08s（2026-09-30 02:15:34 → 02:19:42 UTC），日志 `build-logs/podman-build.log`（`Compiled with warnings.` / `BUILD_EXIT:0`）
+- 耗时 4m31s（2026-09-30 02:49:08 → 02:53:39 UTC），日志 `build-logs/podman-build.log`（`Compiled with warnings.` / `BUILD_EXIT:0`）
+- 该镜像由**最终提交后的工作树**构建；其客户端产物 `main.b65bba5a.css` / `main.91f8f071.js` 与 reviewer T14 复验的镜像 `0bb9e63e42f3` **完全同名同哈希**（唯一差异是镜像内的文档 md 更新为最终版），因此 T14 的功能性结论对最终镜像继续成立；Lead 也在该镜像上重跑 `smoke.cjs` = **36 PASS / 0 FAIL**
 - 预热构建（同一原始 Dockerfile，01:41:10 → 01:58:44，17m34s）证明上游 Dockerfile 在本机 Podman 下可直接构建；最终产物直接由它产出，**`.docker/**` 未做任何修改**
 - 历史说明：首次构建（T7）曾因本机到 `dl-cdn.alpinelinux.org` 的带宽在构建时段仅 20.9 KB/s，临时使用过逐字副本 `build-logs/Dockerfile.podman`（仅 builder 阶段 apk 前加 1 行镜像源替换）。该偏差已在 T13 消除；`podman history` 与运行阶段 `/etc/apk/repositories` 均确认最终镜像不含任何源替换
 - 独立复现：reviewer 自行 `podman build` 产出 `flame-zh:review` 并在 5018 端口运行；三方产物内容哈希一致（`main.b65bba5a.css` / `main.91f8f071.js`）
@@ -147,10 +148,15 @@ podman run -d --name flame-zh -p 5005:5005 -e PASSWORD=*** \
 2. `white` / `cloud` 的 accent 链接对比度建议单列一个可选上游补丁，不要混入本阶段最小 diff。
 3. 若后续需要用户自定义背景图，沿用现有 `data-theme` / `flame.style` / `flame.bg` 契约扩展（仅本地上传，禁止远程 URL）。
 4. 可将语言选择器同时放到 `/settings` 主题页（无需登录），提升未登录用户切换便利性。
-5. 建议提交拆分（保持可读历史与上游同步友好）：
-   - `feat(i18n): add lightweight zh-CN/English language layer`
-   - `feat(i18n): localize the full user-facing UI`
-   - `feat(theme): add anime light/dark visual skins`
-   - `feat(theme): add local anime background with gradient fallback`
-   - `docs: add audit / i18n / theme / third-party and review documents`
-   - 不提交 `build-logs/**`
+5. 建议提交拆分（保持可读历史与上游同步友好）—— **已按此落地**（分支 `feature/zh-anime`，6 个 commit，工作树干净，仅 `build-logs/` 有意保持未跟踪）：
+
+| commit | 说明 |
+| --- | --- |
+| `bc4bdaa` | `chore: ignore build artifacts and local build logs` |
+| `c335995` | `feat(i18n): add lightweight zh-CN/English language layer` |
+| `ea2573f` | `feat(i18n): localize the full user-facing UI` |
+| `f8ff482` | `feat(theme): add original local anime background artwork` |
+| `e75f80d` | `feat(theme): add anime light/dark visual skins` |
+| `1bbd977` | `docs: add audit, i18n/theme design, third-party asset and review records`（本报告自身在随后一次 `docs: finalize phase-1 report` 中定稿） |
+
+相对上游 `3e03c25`：**66 个文件，+4715 / −370**（其中源码 44 个文件 +652/−370，其余为新增 i18n/主题/素材与文档）。git 身份使用仓库级 `Flame-ZH <flame-zh@localhost>`（未修改用户全局配置）。
