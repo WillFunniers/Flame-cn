@@ -4,3 +4,4 @@ public
 k8s
 skaffold.yaml
 data
+build-logs
