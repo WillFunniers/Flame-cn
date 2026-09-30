@@ -1,0 +1,4 @@
+/* LanguageSettings reuses the shared InputGroup atom for layout. */
+.LanguageSettings {
+  width: 100%;
+}
