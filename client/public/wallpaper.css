@@ -1,0 +1,47 @@
+/* ==========================================================================
+   Wallpaper layer (Flame-cn)
+   --------------------------------------------------------------------------
+   Served from public/ on purpose: the image lives in the data volume and is
+   exposed by the backend at /uploads/... , so this file must stay out of the
+   bundler (webpack would try to resolve the absolute url() and fail).
+
+   SCOPE CONTRACT:
+     * Every rule is scoped to `html[data-bg="on"]` only — there is NO theme
+       binding, so any Flame theme (built-in or custom) can be combined with or
+       without the wallpaper.
+     * Nothing here defines --color-* : the colours keep coming from the
+       upstream theme mechanism (three variables written on <body>).
+     * The picture is a local file (<data>/uploads/wallpaper.png). If it is
+       missing, nothing is painted and the page falls back to the plain theme
+       look. No remote URL, no external service.
+   ========================================================================== */
+
+/* Wallpaper */
+html[data-bg='on'] body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: url('/uploads/wallpaper.png') center / cover no-repeat;
+}
+
+/* Wash: the theme background colour at low opacity, so text keeps its contrast
+   on top of an arbitrary picture. With no picture it merges into the normal
+   theme background (same colour), i.e. no visual change. */
+html[data-bg='on'] body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: var(--color-background);
+  opacity: 0.58;
+}
+
+/* Keep the app above both layers. `position: relative` (not transform/filter)
+   so position:fixed children (modals, floating buttons) stay viewport bound. */
+html[data-bg='on'] #root {
+  position: relative;
+  z-index: 1;
+}

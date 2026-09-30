@@ -5,7 +5,11 @@ import axios from 'axios';
 import { useSelector } from 'react-redux';
 
 // Typescript
-import { Weather, ApiResponse } from '../../../interfaces';
+import {
+  Weather,
+  WeatherProviderStatus,
+  ApiResponse,
+} from '../../../interfaces';
 
 // CSS
 import classes from './WeatherWidget.module.css';
@@ -22,6 +26,17 @@ export const WeatherWidget = (): JSX.Element => {
 
   const [weather, setWeather] = useState<Weather>(weatherTemplate);
   const [isLoading, setIsLoading] = useState(true);
+  // Whether the selected provider can actually deliver data. The status is a
+  // non-secret flag computed on the server (credentials never reach the client).
+  const [weatherEnabled, setWeatherEnabled] = useState(false);
+
+  // Provider status (which provider is selected + is it configured)
+  useEffect(() => {
+    axios
+      .get<ApiResponse<WeatherProviderStatus>>('/api/weather/status')
+      .then((data) => setWeatherEnabled(Boolean(data.data.data?.configured)))
+      .catch((err) => console.log(err));
+  }, []);
 
   // Initial request to get data
   useEffect(() => {
@@ -57,28 +72,27 @@ export const WeatherWidget = (): JSX.Element => {
 
   return (
     <div className={classes.WeatherWidget}>
-      {configLoading ||
-        (config.WEATHER_API_KEY && weather.id > 0 && (
-          <Fragment>
-            <div className={classes.WeatherIcon}>
-              <WeatherIcon
-                weatherStatusCode={weather.conditionCode}
-                isDay={weather.isDay}
-              />
-            </div>
-            <div className={classes.WeatherDetails}>
-              {/* TEMPERATURE */}
-              {config.isCelsius ? (
-                <span>{weather.tempC}°C</span>
-              ) : (
-                <span>{Math.round(weather.tempF)}°F</span>
-              )}
+      {!configLoading && weatherEnabled && weather.id > 0 && (
+        <Fragment>
+          <div className={classes.WeatherIcon}>
+            <WeatherIcon
+              weatherStatusCode={weather.conditionCode}
+              isDay={weather.isDay}
+            />
+          </div>
+          <div className={classes.WeatherDetails}>
+            {/* TEMPERATURE */}
+            {config.isCelsius ? (
+              <span>{weather.tempC}°C</span>
+            ) : (
+              <span>{Math.round(weather.tempF)}°F</span>
+            )}
 
-              {/* ADDITIONAL DATA */}
-              <span>{weather[config.weatherData]}%</span>
-            </div>
-          </Fragment>
-        ))}
+            {/* ADDITIONAL DATA */}
+            <span>{weather[config.weatherData]}%</span>
+          </div>
+        </Fragment>
+      )}
     </div>
   );
 };

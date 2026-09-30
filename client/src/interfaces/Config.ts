@@ -1,7 +1,9 @@
 import { WeatherData } from '../types';
+import { WeatherProvider } from './Weather';
 
 export interface Config {
   WEATHER_API_KEY: string;
+  weatherProvider: WeatherProvider;
   lat: number;
   long: number;
   isCelsius: boolean;

@@ -14,7 +14,7 @@ import { useT } from '../../../i18n';
 
 // Components
 import { Button, InputGroup, SettingsHeadline, Spinner } from '../../UI';
-import { AnimeStyle } from './AnimeStyle/AnimeStyle';
+import { BackgroundSettings } from './Background/BackgroundSettings';
 import { ThemeBuilder } from './ThemeBuilder/ThemeBuilder';
 import { ThemeGrid } from './ThemeGrid/ThemeGrid';
 
@@ -79,7 +79,7 @@ export const Themer = (): JSX.Element => {
 
   return (
     <Fragment>
-      <AnimeStyle />
+      <BackgroundSettings />
 
       <SettingsHeadline text={t('theme.appThemes')} />
       {!themes.length ? <Spinner /> : <ThemeGrid themes={themes} />}

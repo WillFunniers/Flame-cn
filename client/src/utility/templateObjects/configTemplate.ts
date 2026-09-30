@@ -2,6 +2,7 @@ import { Config } from '../../interfaces';
 
 export const configTemplate: Config = {
   WEATHER_API_KEY: '',
+  weatherProvider: 'weatherapi',
   lat: 0,
   long: 0,
   isCelsius: true,

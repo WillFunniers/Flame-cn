@@ -53,25 +53,24 @@
       content="Flame - self-hosted startpage for your server"
     />
     <link rel="stylesheet" href="%PUBLIC_URL%/flame.css" />
-    <!-- Anime skin bootstrap: mirror of utility/animeTheme.ts
-         applyBootThemeStyle(). Keeps the first paint from flashing the default
-         look when a skin was chosen in a previous session. Local storage is
-         wrapped in try/catch so private mode simply keeps the upstream look. -->
+    <!-- Wallpaper layer (theme independent). Kept in public/ because it points
+         at /uploads/wallpaper.png, a file from the data volume that must not be
+         resolved by the bundler. -->
+    <link rel="stylesheet" href="%PUBLIC_URL%/wallpaper.css" />
+    <!-- Wallpaper bootstrap: mirror of utility/wallpaper.ts
+         applyBootBackground(). Sets only the wallpaper switch so the first
+         paint already has (or has not) the background layer; the theme is
+         handled by Flame's own theme mechanism. Local storage is wrapped in
+         try/catch so private mode simply keeps the default. -->
     <script>
       (function () {
         try {
-          var style = window.localStorage.getItem('flame.style');
-          if (style !== 'anime-light' && style !== 'anime-dark') {
-            style = 'default';
-          }
-          var root = document.documentElement;
-          root.setAttribute('data-theme', style);
-          root.setAttribute(
+          document.documentElement.setAttribute(
             'data-bg',
             window.localStorage.getItem('flame.bg') === 'off' ? 'off' : 'on'
           );
         } catch (error) {
-          /* storage unavailable: keep the upstream default look */
+          /* storage unavailable: no wallpaper layer */
         }
       })();
     </script>

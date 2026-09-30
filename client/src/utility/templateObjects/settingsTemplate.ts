@@ -24,6 +24,7 @@ export const uiSettingsTemplate: UISettingsForm = {
 
 export const weatherSettingsTemplate: WeatherForm = {
   WEATHER_API_KEY: '',
+  weatherProvider: 'weatherapi',
   lat: 0,
   long: 0,
   isCelsius: true,

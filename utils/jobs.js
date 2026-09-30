@@ -1,15 +1,17 @@
 const schedule = require('node-schedule');
 const getExternalWeather = require('./getExternalWeather');
 const clearWeatherData = require('./clearWeatherData');
+const { isWeatherConfigured } = require('./weather');
 const Sockets = require('../Sockets');
 const Logger = require('./Logger');
-const loadConfig = require('./loadConfig');
 const logger = new Logger();
 
 module.exports = async function () {
-  const { WEATHER_API_KEY } = await loadConfig();
+  // The selected weather provider decides whether the scheduler runs at all
+  // (upstream: WEATHER_API_KEY present; qweather: env credentials present).
+  const weatherEnabled = await isWeatherConfigured();
 
-  if (WEATHER_API_KEY != '') {
+  if (weatherEnabled) {
     // Update weather data every 15 minutes
     const weatherJob = schedule.scheduleJob(
       'updateWeather',
@@ -20,9 +22,7 @@ module.exports = async function () {
 
           Sockets.getSocket('weather').socket.send(JSON.stringify(weatherData));
         } catch (err) {
-          if (WEATHER_API_KEY) {
-            logger.log(err.message, 'ERROR');
-          }
+          logger.log(err.message, 'ERROR');
         }
       }
     );

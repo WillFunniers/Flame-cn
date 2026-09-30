@@ -8,7 +8,12 @@ import { actionCreators } from '../../../store';
 import { State } from '../../../store/reducers';
 
 // Typescript
-import { ApiResponse, Weather, WeatherForm } from '../../../interfaces';
+import {
+  ApiResponse,
+  Weather,
+  WeatherForm,
+  WeatherProviderStatus,
+} from '../../../interfaces';
 
 // UI
 import { InputGroup, Button, SettingsHeadline } from '../../UI';
@@ -35,6 +40,17 @@ export const WeatherSettings = (): JSX.Element => {
     weatherSettingsTemplate
   );
 
+  // Non-secret provider status (which provider is selected / is it configured)
+  const [providerStatus, setProviderStatus] =
+    useState<WeatherProviderStatus | null>(null);
+
+  useEffect(() => {
+    axios
+      .get<ApiResponse<WeatherProviderStatus>>('/api/weather/status')
+      .then((data) => setProviderStatus(data.data.data))
+      .catch((err) => console.log(err));
+  }, []);
+
   // Get config
   useEffect(() => {
     setFormData({
@@ -46,12 +62,31 @@ export const WeatherSettings = (): JSX.Element => {
   const formSubmitHandler = async (e: FormEvent) => {
     e.preventDefault();
 
-    // Check for api key input
-    if ((formData.lat || formData.long) && !formData.WEATHER_API_KEY) {
+    // Upstream provider needs its API key in the config
+    if (
+      formData.weatherProvider !== 'qweather' &&
+      (formData.lat || formData.long) &&
+      !formData.WEATHER_API_KEY
+    ) {
       createNotification({
         title: t('notify.warning'),
         message: t('weather.apiKeyMissing'),
       });
+    }
+
+    // QWeather reads its credentials from the server environment only, so the
+    // settings page cannot fix a missing configuration — report and skip.
+    if (
+      formData.weatherProvider === 'qweather' &&
+      !providerStatus?.qweather.configured
+    ) {
+      createNotification({
+        title: t('notify.warning'),
+        message: t('weather.qweatherNotConfigured'),
+      });
+
+      await updateConfig(formData);
+      return;
     }
 
     // Save settings
@@ -102,26 +137,61 @@ export const WeatherSettings = (): JSX.Element => {
 
   return (
     <form onSubmit={(e) => formSubmitHandler(e)}>
-      <SettingsHeadline text={t('weather.apiSection')} />
-      {/* API KEY */}
+      <SettingsHeadline text={t('weather.providerSection')} />
+      {/* PROVIDER */}
       <InputGroup>
-        <label htmlFor="WEATHER_API_KEY">{t('weather.apiKey')}</label>
-        <input
-          type="text"
-          id="WEATHER_API_KEY"
-          name="WEATHER_API_KEY"
-          placeholder="secret"
-          value={formData.WEATHER_API_KEY}
+        <label htmlFor="weatherProvider">{t('weather.provider')}</label>
+        <select
+          id="weatherProvider"
+          name="weatherProvider"
+          value={formData.weatherProvider}
           onChange={(e) => inputChangeHandler(e)}
-        />
-        <span>
-          {t('weather.usingPrefix')}
-          <a href="https://www.weatherapi.com/pricing.aspx" target="blank">
-            {t('weather.weatherApiLink')}
-          </a>
-          {t('weather.apiKeyHintSuffix')}
-        </span>
+        >
+          <option value="weatherapi">{t('weather.providerUpstream')}</option>
+          <option value="qweather">{t('weather.providerQweather')}</option>
+        </select>
       </InputGroup>
+
+      {formData.weatherProvider === 'qweather' && (
+        <InputGroup>
+          <label htmlFor="qweatherStatus">{t('weather.qweatherStatus')}</label>
+          <input
+            type="text"
+            id="qweatherStatus"
+            name="qweatherStatus"
+            readOnly
+            value={
+              providerStatus?.qweather.configured
+                ? t('weather.qweatherConfigured')
+                : t('weather.qweatherNotConfigured')
+            }
+          />
+          <span>{t('weather.qweatherHint')}</span>
+        </InputGroup>
+      )}
+
+      <SettingsHeadline text={t('weather.apiSection')} />
+      {/* API KEY (upstream provider only) */}
+      {formData.weatherProvider !== 'qweather' && (
+        <InputGroup>
+          <label htmlFor="WEATHER_API_KEY">{t('weather.apiKey')}</label>
+          <input
+            type="text"
+            id="WEATHER_API_KEY"
+            name="WEATHER_API_KEY"
+            placeholder="secret"
+            value={formData.WEATHER_API_KEY}
+            onChange={(e) => inputChangeHandler(e)}
+          />
+          <span>
+            {t('weather.usingPrefix')}
+            <a href="https://www.weatherapi.com/pricing.aspx" target="blank">
+              {t('weather.weatherApiLink')}
+            </a>
+            {t('weather.apiKeyHintSuffix')}
+          </span>
+        </InputGroup>
+      )}
 
       <SettingsHeadline text={t('weather.locationSection')} />
       {/* LAT */}
