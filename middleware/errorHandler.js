@@ -20,6 +20,8 @@ const errorHandler = (err, req, res, next) => {
   res.status(err.statusCode || 500).json({
     success: false,
     error: error.message || 'Server Error',
+    // Already sanitized upstream (no key / token / host / URL).
+    ...(err.qweather ? { qweather: err.qweather } : {}),
   });
 };
 

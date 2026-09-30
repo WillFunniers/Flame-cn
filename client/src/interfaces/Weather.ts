@@ -23,9 +23,9 @@ export type WeatherProvider = 'weatherapi' | 'qweather';
 export interface WeatherProviderStatus {
   provider: WeatherProvider;
   configured: boolean;
+  authMode: string | null;
   qweather: {
     configured: boolean;
-    host: string | null;
     authMode: string | null;
   };
   weatherapi: {

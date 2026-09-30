@@ -35,8 +35,9 @@ const isWeatherConfigured = async () => {
 };
 
 /**
- * Non-secret status for the settings UI. It intentionally exposes only a
- * boolean + the host (the host is not a credential) — never the key / JWT.
+ * Non-secret status for the settings UI. It intentionally exposes only
+ * booleans + the effective auth mode — never the key, host, JWT or any part of
+ * the credential configuration.
  */
 const getProviderStatus = async () => {
   const config = await loadConfig();
@@ -45,9 +46,9 @@ const getProviderStatus = async () => {
   return {
     provider,
     configured: PROVIDERS[provider].isConfigured(config),
+    authMode: provider === qweather.NAME ? qweather.getAuthMode() : null,
     qweather: {
       configured: qweather.isConfigured(),
-      host: qweather.getHost() || null,
       authMode: qweather.getAuthMode(),
     },
     weatherapi: {
