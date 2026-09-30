@@ -15,7 +15,12 @@ import { InputGroup, Button, SettingsHeadline } from '../../UI';
 // Utils
 import { inputHandler, dockerSettingsTemplate } from '../../../utility';
 
+// i18n
+import { useT } from '../../../i18n';
+
 export const DockerSettings = (): JSX.Element => {
+  const t = useT();
+
   const { loading, config } = useSelector((state: State) => state.config);
 
   const dispatch = useDispatch();
@@ -56,10 +61,10 @@ export const DockerSettings = (): JSX.Element => {
 
   return (
     <form onSubmit={(e) => formSubmitHandler(e)}>
-      <SettingsHeadline text="Docker" />
+      <SettingsHeadline text={t('docker.section')} />
       {/* CUSTOM DOCKER SOCKET HOST */}
       <InputGroup>
-        <label htmlFor="dockerHost">Docker host</label>
+        <label htmlFor="dockerHost">{t('docker.host')}</label>
         <input
           type="text"
           id="dockerHost"
@@ -72,51 +77,51 @@ export const DockerSettings = (): JSX.Element => {
 
       {/* USE DOCKER API */}
       <InputGroup>
-        <label htmlFor="dockerApps">Use Docker API</label>
+        <label htmlFor="dockerApps">{t('docker.useApi')}</label>
         <select
           id="dockerApps"
           name="dockerApps"
           value={formData.dockerApps ? 1 : 0}
           onChange={(e) => inputChangeHandler(e, { isBool: true })}
         >
-          <option value={1}>True</option>
-          <option value={0}>False</option>
+          <option value={1}>{t('ui.true')}</option>
+          <option value={0}>{t('ui.false')}</option>
         </select>
       </InputGroup>
 
       {/* UNPIN DOCKER APPS */}
       <InputGroup>
-        <label htmlFor="unpinStoppedApps">
-          Unpin stopped containers / other apps
-        </label>
+        <label htmlFor="unpinStoppedApps">{t('docker.unpinStopped')}</label>
         <select
           id="unpinStoppedApps"
           name="unpinStoppedApps"
           value={formData.unpinStoppedApps ? 1 : 0}
           onChange={(e) => inputChangeHandler(e, { isBool: true })}
         >
-          <option value={1}>True</option>
-          <option value={0}>False</option>
+          <option value={1}>{t('ui.true')}</option>
+          <option value={0}>{t('ui.false')}</option>
         </select>
       </InputGroup>
 
       {/* KUBERNETES SETTINGS */}
-      <SettingsHeadline text="Kubernetes" />
+      <SettingsHeadline text={t('docker.kubernetes')} />
       {/* USE KUBERNETES */}
       <InputGroup>
-        <label htmlFor="kubernetesApps">Use Kubernetes Ingress API</label>
+        <label htmlFor="kubernetesApps">
+          {t('docker.useKubernetesIngress')}
+        </label>
         <select
           id="kubernetesApps"
           name="kubernetesApps"
           value={formData.kubernetesApps ? 1 : 0}
           onChange={(e) => inputChangeHandler(e, { isBool: true })}
         >
-          <option value={1}>True</option>
-          <option value={0}>False</option>
+          <option value={1}>{t('ui.true')}</option>
+          <option value={0}>{t('ui.false')}</option>
         </select>
       </InputGroup>
 
-      <Button>Save changes</Button>
+      <Button>{t('ui.saveChanges')}</Button>
     </form>
   );
 };

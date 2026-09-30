@@ -10,11 +10,16 @@ import { State } from '../../../../store/reducers';
 // Other
 import { ActionIcons, CompactTable, Icon, ModalForm } from '../../../UI';
 
+// i18n
+import { useT } from '../../../../i18n';
+
 interface Props {
   modalHandler: () => void;
 }
 
 export const ThemeEditor = (props: Props): JSX.Element => {
+  const t = useT();
+
   const {
     theme: { userThemes },
   } = useSelector((state: State) => state);
@@ -30,22 +35,22 @@ export const ThemeEditor = (props: Props): JSX.Element => {
   };
 
   const deleteHandler = (theme: Theme) => {
-    if (window.confirm(`Are you sure you want to delete this theme?`)) {
+    if (window.confirm(t('theme.deleteThemeConfirm'))) {
       deleteTheme(theme.name);
     }
   };
 
   return (
     <ModalForm formHandler={() => {}} modalHandler={props.modalHandler}>
-      <CompactTable headers={['Name', 'Actions']}>
-        {userThemes.map((t, idx) => (
+      <CompactTable headers={[t('ui.name'), t('ui.actions')]}>
+        {userThemes.map((userTheme, idx) => (
           <Fragment key={idx}>
-            <span>{t.name}</span>
+            <span>{userTheme.name}</span>
             <ActionIcons>
-              <span onClick={() => updateHandler(t)}>
+              <span onClick={() => updateHandler(userTheme)}>
                 <Icon icon="mdiPencil" />
               </span>
-              <span onClick={() => deleteHandler(t)}>
+              <span onClick={() => deleteHandler(userTheme)}>
                 <Icon icon="mdiDelete" />
               </span>
             </ActionIcons>

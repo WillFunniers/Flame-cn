@@ -18,6 +18,17 @@ import classes from './Form.module.css';
 // Utils
 import { inputHandler, newBookmarkTemplate } from '../../../utility';
 
+// i18n
+import { useT } from '../../../i18n';
+
+// Maps a validated form field to the key used in the "field cannot be empty"
+// message, so the label is localised while English stays verbatim ("name").
+const FIELD_KEYS: Record<string, string> = {
+  name: 'error.fieldName',
+  url: 'error.fieldUrl',
+  icon: 'error.fieldIcon',
+};
+
 interface Props {
   modalHandler: () => void;
   bookmark?: Bookmark;
@@ -27,6 +38,8 @@ export const BookmarksForm = ({
   bookmark,
   modalHandler,
 }: Props): JSX.Element => {
+  const t = useT();
+
   const { categories } = useSelector((state: State) => state.bookmarks);
 
   const dispatch = useDispatch();
@@ -72,8 +85,8 @@ export const BookmarksForm = ({
     for (let field of ['name', 'url', 'icon'] as const) {
       if (/^ +$/.test(formData[field])) {
         createNotification({
-          title: 'Error',
-          message: `Field cannot be empty: ${field}`,
+          title: t('notify.error'),
+          message: t('error.fieldEmpty', { field: t(FIELD_KEYS[field]) }),
         });
 
         return;
@@ -96,8 +109,8 @@ export const BookmarksForm = ({
     const checkCategory = (): boolean => {
       if (formData.categoryId < 0) {
         createNotification({
-          title: 'Error',
-          message: 'Please select category',
+          title: t('notify.error'),
+          message: t('error.selectCategory'),
         });
 
         return false;
@@ -112,8 +125,8 @@ export const BookmarksForm = ({
 
       if (formData.categoryId < 0) {
         createNotification({
-          title: 'Error',
-          message: 'Please select category',
+          title: t('notify.error'),
+          message: t('error.selectCategory'),
         });
         return;
       }
@@ -158,7 +171,7 @@ export const BookmarksForm = ({
     <ModalForm modalHandler={modalHandler} formHandler={formSubmitHandler}>
       {/* NAME */}
       <InputGroup>
-        <label htmlFor="name">Bookmark Name</label>
+        <label htmlFor="name">{t('bookmarks.bookmarkName')}</label>
         <input
           type="text"
           name="name"
@@ -172,7 +185,7 @@ export const BookmarksForm = ({
 
       {/* URL */}
       <InputGroup>
-        <label htmlFor="url">Bookmark URL</label>
+        <label htmlFor="url">{t('bookmarks.bookmarkUrl')}</label>
         <input
           type="text"
           name="url"
@@ -186,7 +199,7 @@ export const BookmarksForm = ({
 
       {/* CATEGORY */}
       <InputGroup>
-        <label htmlFor="categoryId">Bookmark Category</label>
+        <label htmlFor="categoryId">{t('bookmarks.bookmarkCategory')}</label>
         <select
           name="categoryId"
           id="categoryId"
@@ -194,7 +207,7 @@ export const BookmarksForm = ({
           onChange={(e) => inputChangeHandler(e, { isNumber: true })}
           value={formData.categoryId}
         >
-          <option value={-1}>Select category</option>
+          <option value={-1}>{t('ui.selectCategory')}</option>
           {categories.map((category: Category): JSX.Element => {
             return (
               <option key={category.id} value={category.id}>
@@ -209,7 +222,7 @@ export const BookmarksForm = ({
       {!useCustomIcon ? (
         // mdi
         <InputGroup>
-          <label htmlFor="icon">Bookmark Icon (optional)</label>
+          <label htmlFor="icon">{t('bookmarks.bookmarkIconOptional')}</label>
           <input
             type="text"
             name="icon"
@@ -219,23 +232,23 @@ export const BookmarksForm = ({
             onChange={(e) => inputChangeHandler(e)}
           />
           <span>
-            Use icon name from MDI or pass a valid URL.
+            {t('ui.iconHint')}
             <a href="https://materialdesignicons.com/" target="blank">
               {' '}
-              Click here for reference
+              {t('ui.clickForReference')}
             </a>
           </span>
           <span
             onClick={() => toggleUseCustomIcon(!useCustomIcon)}
             className={classes.Switch}
           >
-            Switch to custom icon upload
+            {t('ui.switchToCustomIcon')}
           </span>
         </InputGroup>
       ) : (
         // custom
         <InputGroup>
-          <label htmlFor="icon">Bookmark Icon (optional)</label>
+          <label htmlFor="icon">{t('bookmarks.bookmarkIconOptional')}</label>
           <input
             type="file"
             name="icon"
@@ -250,26 +263,30 @@ export const BookmarksForm = ({
             }}
             className={classes.Switch}
           >
-            Switch to MDI
+            {t('ui.switchToMdi')}
           </span>
         </InputGroup>
       )}
 
       {/* VISIBILTY */}
       <InputGroup>
-        <label htmlFor="isPublic">Bookmark visibility</label>
+        <label htmlFor="isPublic">{t('bookmarks.bookmarkVisibility')}</label>
         <select
           id="isPublic"
           name="isPublic"
           value={formData.isPublic ? 1 : 0}
           onChange={(e) => inputChangeHandler(e, { isBool: true })}
         >
-          <option value={1}>Visible (anyone can access it)</option>
-          <option value={0}>Hidden (authentication required)</option>
+          <option value={1}>{t('ui.visibleOption')}</option>
+          <option value={0}>{t('ui.hiddenOption')}</option>
         </select>
       </InputGroup>
 
-      <Button>{bookmark ? 'Update bookmark' : 'Add new bookmark'}</Button>
+      <Button>
+        {bookmark
+          ? t('bookmarks.updateBookmark')
+          : t('bookmarks.addNewBookmark')}
+      </Button>
     </ModalForm>
   );
 };

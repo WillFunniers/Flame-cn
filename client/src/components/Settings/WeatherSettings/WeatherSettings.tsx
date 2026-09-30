@@ -16,7 +16,12 @@ import { InputGroup, Button, SettingsHeadline } from '../../UI';
 // Utils
 import { inputHandler, weatherSettingsTemplate } from '../../../utility';
 
+// i18n
+import { useT } from '../../../i18n';
+
 export const WeatherSettings = (): JSX.Element => {
+  const t = useT();
+
   const { loading, config } = useSelector((state: State) => state.config);
 
   const dispatch = useDispatch();
@@ -44,8 +49,8 @@ export const WeatherSettings = (): JSX.Element => {
     // Check for api key input
     if ((formData.lat || formData.long) && !formData.WEATHER_API_KEY) {
       createNotification({
-        title: 'Warning',
-        message: 'API key is missing. Weather Module will NOT work',
+        title: t('notify.warning'),
+        message: t('weather.apiKeyMissing'),
       });
     }
 
@@ -57,13 +62,13 @@ export const WeatherSettings = (): JSX.Element => {
       .get<ApiResponse<Weather>>('/api/weather/update')
       .then(() => {
         createNotification({
-          title: 'Success',
-          message: 'Weather updated',
+          title: t('notify.success'),
+          message: t('weather.updated'),
         });
       })
       .catch((err) => {
         createNotification({
-          title: 'Error',
+          title: t('notify.error'),
           message: err.response.data.error,
         });
       });
@@ -97,10 +102,10 @@ export const WeatherSettings = (): JSX.Element => {
 
   return (
     <form onSubmit={(e) => formSubmitHandler(e)}>
-      <SettingsHeadline text="API" />
+      <SettingsHeadline text={t('weather.apiSection')} />
       {/* API KEY */}
       <InputGroup>
-        <label htmlFor="WEATHER_API_KEY">API key</label>
+        <label htmlFor="WEATHER_API_KEY">{t('weather.apiKey')}</label>
         <input
           type="text"
           id="WEATHER_API_KEY"
@@ -110,19 +115,18 @@ export const WeatherSettings = (): JSX.Element => {
           onChange={(e) => inputChangeHandler(e)}
         />
         <span>
-          Using
+          {t('weather.usingPrefix')}
           <a href="https://www.weatherapi.com/pricing.aspx" target="blank">
-            {' '}
-            Weather API
+            {t('weather.weatherApiLink')}
           </a>
-          . Key is required for weather module to work.
+          {t('weather.apiKeyHintSuffix')}
         </span>
       </InputGroup>
 
-      <SettingsHeadline text="Location" />
+      <SettingsHeadline text={t('weather.locationSection')} />
       {/* LAT */}
       <InputGroup>
-        <label htmlFor="lat">Latitude</label>
+        <label htmlFor="lat">{t('weather.latitude')}</label>
         <input
           type="number"
           id="lat"
@@ -134,13 +138,13 @@ export const WeatherSettings = (): JSX.Element => {
           lang="en-150"
         />
         <span onClick={getLocation}>
-          <a href="#">Click to get current location</a>
+          <a href="#">{t('weather.getCurrentLocation')}</a>
         </span>
       </InputGroup>
 
       {/* LONG */}
       <InputGroup>
-        <label htmlFor="long">Longitude</label>
+        <label htmlFor="long">{t('weather.longitude')}</label>
         <input
           type="number"
           id="long"
@@ -153,36 +157,36 @@ export const WeatherSettings = (): JSX.Element => {
         />
       </InputGroup>
 
-      <SettingsHeadline text="Other" />
+      <SettingsHeadline text={t('weather.otherSection')} />
       {/* TEMPERATURE */}
       <InputGroup>
-        <label htmlFor="isCelsius">Temperature unit</label>
+        <label htmlFor="isCelsius">{t('weather.temperatureUnit')}</label>
         <select
           id="isCelsius"
           name="isCelsius"
           onChange={(e) => inputChangeHandler(e, { isBool: true })}
           value={formData.isCelsius ? 1 : 0}
         >
-          <option value={1}>Celsius</option>
-          <option value={0}>Fahrenheit</option>
+          <option value={1}>{t('weather.celsius')}</option>
+          <option value={0}>{t('weather.fahrenheit')}</option>
         </select>
       </InputGroup>
 
       {/* WEATHER DATA */}
       <InputGroup>
-        <label htmlFor="weatherData">Additional weather data</label>
+        <label htmlFor="weatherData">{t('weather.additionalData')}</label>
         <select
           id="weatherData"
           name="weatherData"
           value={formData.weatherData}
           onChange={(e) => inputChangeHandler(e)}
         >
-          <option value="cloud">Cloud coverage</option>
-          <option value="humidity">Humidity</option>
+          <option value="cloud">{t('weather.cloudCoverage')}</option>
+          <option value="humidity">{t('weather.humidity')}</option>
         </select>
       </InputGroup>
 
-      <Button>Save changes</Button>
+      <Button>{t('ui.saveChanges')}</Button>
     </form>
   );
 };

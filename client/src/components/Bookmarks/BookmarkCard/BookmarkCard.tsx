@@ -14,12 +14,17 @@ import classes from './BookmarkCard.module.css';
 import { Icon } from '../../UI';
 import { iconParser, isImage, isSvg, isUrl, urlParser } from '../../../utility';
 
+// i18n
+import { useT } from '../../../i18n';
+
 interface Props {
   category: Category;
   fromHomepage?: boolean;
 }
 
 export const BookmarkCard = (props: Props): JSX.Element => {
+  const t = useT();
+
   const { category, fromHomepage = false } = props;
 
   const {
@@ -61,7 +66,7 @@ export const BookmarkCard = (props: Props): JSX.Element => {
                 <div className={classes.BookmarkIcon}>
                   <img
                     src={source}
-                    alt={`${name} icon`}
+                    alt={t('bookmarks.iconAlt', { name })}
                     className={classes.CustomIcon}
                   />
                 </div>

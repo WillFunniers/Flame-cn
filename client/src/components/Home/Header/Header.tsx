@@ -15,7 +15,12 @@ import { WeatherWidget } from '../../Widgets/WeatherWidget/WeatherWidget';
 import { getDateTime } from './functions/getDateTime';
 import { greeter } from './functions/greeter';
 
+// i18n
+import { useT } from '../../../i18n';
+
 export const Header = (): JSX.Element => {
+  const t = useT();
+
   const { hideHeader, hideDate, showTime } = useSelector(
     (state: State) => state.config.config
   );
@@ -39,7 +44,7 @@ export const Header = (): JSX.Element => {
       {(!hideDate || showTime) && <p>{dateTime}</p>}
 
       <Link to="/settings" className={classes.SettingsLink}>
-        Go to Settings
+        {t('home.goToSettings')}
       </Link>
 
       {!hideHeader && (

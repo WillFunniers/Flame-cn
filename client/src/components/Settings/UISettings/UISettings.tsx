@@ -12,10 +12,18 @@ import { UISettingsForm } from '../../../interfaces';
 // UI
 import { InputGroup, Button, SettingsHeadline } from '../../UI';
 
+// i18n
+import { useT } from '../../../i18n';
+
+// Components
+import { LanguageSettings } from '../LanguageSettings/LanguageSettings';
+
 // Utils
 import { uiSettingsTemplate, inputHandler } from '../../../utility';
 
 export const UISettings = (): JSX.Element => {
+  const t = useT();
+
   const { loading, config } = useSelector((state: State) => state.config);
 
   const dispatch = useDispatch();
@@ -57,11 +65,15 @@ export const UISettings = (): JSX.Element => {
 
   return (
     <form onSubmit={(e) => formSubmitHandler(e)}>
+      {/* === LANGUAGE === */}
+      <SettingsHeadline text={t('settings.language')} />
+      <LanguageSettings />
+
       {/* === OTHER OPTIONS === */}
-      <SettingsHeadline text="Miscellaneous" />
+      <SettingsHeadline text={t('settings.miscellaneous')} />
       {/* PAGE TITLE */}
       <InputGroup>
-        <label htmlFor="customTitle">Custom page title</label>
+        <label htmlFor="customTitle">{t('settings.customPageTitle')}</label>
         <input
           type="text"
           id="customTitle"
@@ -73,171 +85,168 @@ export const UISettings = (): JSX.Element => {
       </InputGroup>
 
       {/* === SEARCH OPTIONS === */}
-      <SettingsHeadline text="Search" />
+      <SettingsHeadline text={t('settings.searchSection')} />
       {/* HIDE SEARCHBAR */}
       <InputGroup>
-        <label htmlFor="hideSearch">Hide search bar</label>
+        <label htmlFor="hideSearch">{t('settings.hideSearchBar')}</label>
         <select
           id="hideSearch"
           name="hideSearch"
           value={formData.hideSearch ? 1 : 0}
           onChange={(e) => inputChangeHandler(e, { isBool: true })}
         >
-          <option value={1}>True</option>
-          <option value={0}>False</option>
+          <option value={1}>{t('ui.true')}</option>
+          <option value={0}>{t('ui.false')}</option>
         </select>
       </InputGroup>
 
       {/* AUTOFOCUS SEARCHBAR */}
       <InputGroup>
-        <label htmlFor="disableAutofocus">Disable search bar autofocus</label>
+        <label htmlFor="disableAutofocus">
+          {t('settings.disableAutofocus')}
+        </label>
         <select
           id="disableAutofocus"
           name="disableAutofocus"
           value={formData.disableAutofocus ? 1 : 0}
           onChange={(e) => inputChangeHandler(e, { isBool: true })}
         >
-          <option value={1}>True</option>
-          <option value={0}>False</option>
+          <option value={1}>{t('ui.true')}</option>
+          <option value={0}>{t('ui.false')}</option>
         </select>
       </InputGroup>
 
       {/* === HEADER OPTIONS === */}
-      <SettingsHeadline text="Header" />
+      <SettingsHeadline text={t('settings.headerSection')} />
       {/* HIDE HEADER */}
       <InputGroup>
-        <label htmlFor="hideHeader">
-          Hide headline (greetings and weather)
-        </label>
+        <label htmlFor="hideHeader">{t('settings.hideHeadline')}</label>
         <select
           id="hideHeader"
           name="hideHeader"
           value={formData.hideHeader ? 1 : 0}
           onChange={(e) => inputChangeHandler(e, { isBool: true })}
         >
-          <option value={1}>True</option>
-          <option value={0}>False</option>
+          <option value={1}>{t('ui.true')}</option>
+          <option value={0}>{t('ui.false')}</option>
         </select>
       </InputGroup>
 
       {/* HIDE DATE */}
       <InputGroup>
-        <label htmlFor="hideDate">Hide date</label>
+        <label htmlFor="hideDate">{t('settings.hideDate')}</label>
         <select
           id="hideDate"
           name="hideDate"
           value={formData.hideDate ? 1 : 0}
           onChange={(e) => inputChangeHandler(e, { isBool: true })}
         >
-          <option value={1}>True</option>
-          <option value={0}>False</option>
+          <option value={1}>{t('ui.true')}</option>
+          <option value={0}>{t('ui.false')}</option>
         </select>
       </InputGroup>
 
       {/* HIDE TIME */}
       <InputGroup>
-        <label htmlFor="showTime">Hide time</label>
+        <label htmlFor="showTime">{t('settings.hideTime')}</label>
         <select
           id="showTime"
           name="showTime"
           value={formData.showTime ? 1 : 0}
           onChange={(e) => inputChangeHandler(e, { isBool: true })}
         >
-          <option value={0}>True</option>
-          <option value={1}>False</option>
+          <option value={0}>{t('ui.true')}</option>
+          <option value={1}>{t('ui.false')}</option>
         </select>
       </InputGroup>
 
       {/* DATE FORMAT */}
       <InputGroup>
-        <label htmlFor="useAmericanDate">Date formatting</label>
+        <label htmlFor="useAmericanDate">{t('settings.dateFormatting')}</label>
         <select
           id="useAmericanDate"
           name="useAmericanDate"
           value={formData.useAmericanDate ? 1 : 0}
           onChange={(e) => inputChangeHandler(e, { isBool: true })}
         >
-          <option value={1}>Friday, October 22 2021</option>
-          <option value={0}>Friday, 22 October 2021</option>
+          <option value={1}>{t('settings.dateFormatUs')}</option>
+          <option value={0}>{t('settings.dateFormatIntl')}</option>
         </select>
       </InputGroup>
 
       {/* CUSTOM GREETINGS */}
       <InputGroup>
-        <label htmlFor="greetingsSchema">Custom greetings</label>
+        <label htmlFor="greetingsSchema">{t('settings.customGreetings')}</label>
         <input
           type="text"
           id="greetingsSchema"
           name="greetingsSchema"
-          placeholder="Good day;Hi;Bye!"
+          placeholder={t('settings.placeholderGreetings')}
           value={formData.greetingsSchema}
           onChange={(e) => inputChangeHandler(e)}
         />
-        <span>
-          Greetings must be separated with semicolon. All 4 messages must be
-          filled, even if they are the same
-        </span>
+        <span>{t('settings.customGreetingsHint')}</span>
       </InputGroup>
 
       {/* CUSTOM DAYS */}
       <InputGroup>
-        <label htmlFor="daySchema">Custom weekday names</label>
+        <label htmlFor="daySchema">{t('settings.customWeekdayNames')}</label>
         <input
           type="text"
           id="daySchema"
           name="daySchema"
-          placeholder="Sunday;Monday;Tuesday"
+          placeholder={t('settings.placeholderWeekdays')}
           value={formData.daySchema}
           onChange={(e) => inputChangeHandler(e)}
         />
-        <span>Names must be separated with semicolon</span>
+        <span>{t('settings.namesSeparatedHint')}</span>
       </InputGroup>
 
       {/* CUSTOM MONTHS */}
       <InputGroup>
-        <label htmlFor="monthSchema">Custom month names</label>
+        <label htmlFor="monthSchema">{t('settings.customMonthNames')}</label>
         <input
           type="text"
           id="monthSchema"
           name="monthSchema"
-          placeholder="January;February;March"
+          placeholder={t('settings.placeholderMonths')}
           value={formData.monthSchema}
           onChange={(e) => inputChangeHandler(e)}
         />
-        <span>Names must be separated with semicolon</span>
+        <span>{t('settings.namesSeparatedHint')}</span>
       </InputGroup>
 
       {/* === SECTIONS OPTIONS === */}
-      <SettingsHeadline text="Sections" />
+      <SettingsHeadline text={t('settings.sections')} />
       {/* HIDE APPS */}
       <InputGroup>
-        <label htmlFor="hideApps">Hide applications</label>
+        <label htmlFor="hideApps">{t('settings.hideApplications')}</label>
         <select
           id="hideApps"
           name="hideApps"
           value={formData.hideApps ? 1 : 0}
           onChange={(e) => inputChangeHandler(e, { isBool: true })}
         >
-          <option value={1}>True</option>
-          <option value={0}>False</option>
+          <option value={1}>{t('ui.true')}</option>
+          <option value={0}>{t('ui.false')}</option>
         </select>
       </InputGroup>
 
       {/* HIDE BOOKMARK CATEGORIES */}
       <InputGroup>
-        <label htmlFor="hideCategories">Hide bookmarks</label>
+        <label htmlFor="hideCategories">{t('settings.hideBookmarks')}</label>
         <select
           id="hideCategories"
           name="hideCategories"
           value={formData.hideCategories ? 1 : 0}
           onChange={(e) => inputChangeHandler(e, { isBool: true })}
         >
-          <option value={1}>True</option>
-          <option value={0}>False</option>
+          <option value={1}>{t('ui.true')}</option>
+          <option value={0}>{t('ui.false')}</option>
         </select>
       </InputGroup>
 
-      <Button>Save changes</Button>
+      <Button>{t('ui.saveChanges')}</Button>
     </form>
   );
 };

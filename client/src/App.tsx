@@ -12,6 +12,9 @@ import { State } from './store/reducers';
 // Utils
 import { checkVersion, decodeToken, parsePABToTheme } from './utility';
 
+// i18n
+import { t } from './i18n';
+
 // Routes
 import { Home } from './components/Home/Home';
 import { Apps } from './components/Apps/Apps';
@@ -44,8 +47,8 @@ export const App = (): JSX.Element => {
         if (now > expiresIn) {
           logout();
           createNotification({
-            title: 'Info',
-            message: 'Session expired. You have been logged out',
+            title: t('notify.info'),
+            message: t('error.sessionExpired'),
           });
         }
       }

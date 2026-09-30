@@ -11,6 +11,9 @@ import { Theme } from '../../../../interfaces';
 
 // UI
 import { Button, Modal } from '../../../UI';
+
+// i18n
+import { useT } from '../../../../i18n';
 import { ThemeGrid } from '../ThemeGrid/ThemeGrid';
 import classes from './ThemeBuilder.module.css';
 import { ThemeCreator } from './ThemeCreator';
@@ -21,6 +24,8 @@ interface Props {
 }
 
 export const ThemeBuilder = ({ themes }: Props): JSX.Element => {
+  const t = useT();
+
   const {
     auth: { isAuthenticated },
     theme: { themeInEdit, userThemes },
@@ -73,7 +78,7 @@ export const ThemeBuilder = ({ themes }: Props): JSX.Element => {
               toggleShowModal(!showModal);
             }}
           >
-            Create new theme
+            {t('theme.createNewTheme')}
           </Button>
 
           {themes.length ? (
@@ -83,7 +88,7 @@ export const ThemeBuilder = ({ themes }: Props): JSX.Element => {
                 toggleShowModal(!showModal);
               }}
             >
-              Edit user themes
+              {t('theme.editUserThemes')}
             </Button>
           ) : (
             <></>

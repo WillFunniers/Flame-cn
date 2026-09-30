@@ -14,6 +14,9 @@ import { ModalForm, InputGroup, Button } from '../../UI';
 // Utils
 import { inputHandler, newCategoryTemplate } from '../../../utility';
 
+// i18n
+import { useT } from '../../../i18n';
+
 interface Props {
   modalHandler: () => void;
   category?: Category;
@@ -23,6 +26,8 @@ export const CategoryForm = ({
   category,
   modalHandler,
 }: Props): JSX.Element => {
+  const t = useT();
+
   const dispatch = useDispatch();
   const { addCategory, updateCategory } = bindActionCreators(
     actionCreators,
@@ -69,7 +74,7 @@ export const CategoryForm = ({
   return (
     <ModalForm modalHandler={modalHandler} formHandler={formSubmitHandler}>
       <InputGroup>
-        <label htmlFor="name">Category Name</label>
+        <label htmlFor="name">{t('bookmarks.categoryName')}</label>
         <input
           type="text"
           name="name"
@@ -82,19 +87,23 @@ export const CategoryForm = ({
       </InputGroup>
 
       <InputGroup>
-        <label htmlFor="isPublic">Category visibility</label>
+        <label htmlFor="isPublic">{t('bookmarks.categoryVisibility')}</label>
         <select
           id="isPublic"
           name="isPublic"
           value={formData.isPublic ? 1 : 0}
           onChange={(e) => inputChangeHandler(e, { isBool: true })}
         >
-          <option value={1}>Visible (anyone can access it)</option>
-          <option value={0}>Hidden (authentication required)</option>
+          <option value={1}>{t('ui.visibleOption')}</option>
+          <option value={0}>{t('ui.hiddenOption')}</option>
         </select>
       </InputGroup>
 
-      <Button>{category ? 'Update category' : 'Add new category'}</Button>
+      <Button>
+        {category
+          ? t('bookmarks.updateCategory')
+          : t('bookmarks.addNewCategory')}
+      </Button>
     </ModalForm>
   );
 };

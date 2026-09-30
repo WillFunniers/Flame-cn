@@ -9,9 +9,14 @@ import { decodeToken, parseTokenExpire } from '../../../../utility';
 
 // Other
 import { InputGroup, Button } from '../../../UI';
+
+// i18n
+import { useT } from '../../../../i18n';
 import classes from '../AppDetails.module.css';
 
 export const AuthForm = (): JSX.Element => {
+  const t = useT();
+
   const { isAuthenticated, token } = useSelector((state: State) => state.auth);
 
   const dispatch = useDispatch();
@@ -51,7 +56,7 @@ export const AuthForm = (): JSX.Element => {
       {!isAuthenticated ? (
         <form onSubmit={formHandler}>
           <InputGroup>
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">{t('app.password')}</label>
             <input
               type="password"
               id="password"
@@ -65,19 +70,19 @@ export const AuthForm = (): JSX.Element => {
               }
             />
             <span>
-              See
+              {t('app.seeWikiPrefix')}
               <a
                 href="https://github.com/pawelmalak/flame/wiki/Authentication"
                 target="blank"
               >
-                {` project wiki `}
+                {t('app.seeWikiLink')}
               </a>
-              to read more about authentication
+              {t('app.seeWikiSuffix')}
             </span>
           </InputGroup>
 
           <InputGroup>
-            <label htmlFor="duration">Session duration</label>
+            <label htmlFor="duration">{t('app.sessionDuration')}</label>
             <select
               id="duration"
               name="duration"
@@ -86,23 +91,24 @@ export const AuthForm = (): JSX.Element => {
                 setFormData({ ...formData, duration: e.target.value })
               }
             >
-              <option value="1h">1 hour</option>
-              <option value="1d">1 day</option>
-              <option value="14d">2 weeks</option>
-              <option value="30d">1 month</option>
-              <option value="1y">1 year</option>
+              <option value="1h">{t('app.duration1h')}</option>
+              <option value="1d">{t('app.duration1d')}</option>
+              <option value="14d">{t('app.duration2w')}</option>
+              <option value="30d">{t('app.duration1m')}</option>
+              <option value="1y">{t('app.duration1y')}</option>
             </select>
           </InputGroup>
 
-          <Button>Login</Button>
+          <Button>{t('app.login')}</Button>
         </form>
       ) : (
         <div>
           <p className={classes.text}>
-            You are logged in. Your session will expire{' '}
+            {t('app.loggedInExpiresPrefix')}
             <span>{tokenExpires}</span>
+            {t('app.loggedInExpiresSuffix')}
           </p>
-          <Button click={logout}>Logout</Button>
+          <Button click={logout}>{t('app.logout')}</Button>
         </div>
       )}
     </Fragment>

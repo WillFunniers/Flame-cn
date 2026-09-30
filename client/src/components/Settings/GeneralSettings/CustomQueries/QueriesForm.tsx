@@ -8,12 +8,17 @@ import { Query } from '../../../../interfaces';
 
 import { Button, InputGroup, ModalForm } from '../../../UI';
 
+// i18n
+import { useT } from '../../../../i18n';
+
 interface Props {
   modalHandler: () => void;
   query?: Query;
 }
 
 export const QueriesForm = (props: Props): JSX.Element => {
+  const t = useT();
+
   const dispatch = useDispatch();
   const { addQuery, updateQuery } = bindActionCreators(
     actionCreators,
@@ -72,7 +77,7 @@ export const QueriesForm = (props: Props): JSX.Element => {
   return (
     <ModalForm modalHandler={modalHandler} formHandler={formHandler}>
       <InputGroup>
-        <label htmlFor="name">Name</label>
+        <label htmlFor="name">{t('ui.name')}</label>
         <input
           type="text"
           name="name"
@@ -85,7 +90,7 @@ export const QueriesForm = (props: Props): JSX.Element => {
       </InputGroup>
 
       <InputGroup>
-        <label htmlFor="name">Prefix</label>
+        <label htmlFor="prefix">{t('ui.prefix')}</label>
         <input
           type="text"
           name="prefix"
@@ -98,7 +103,7 @@ export const QueriesForm = (props: Props): JSX.Element => {
       </InputGroup>
 
       <InputGroup>
-        <label htmlFor="name">Query Template</label>
+        <label htmlFor="template">{t('queries.queryTemplate')}</label>
         <input
           type="text"
           name="template"
@@ -110,7 +115,11 @@ export const QueriesForm = (props: Props): JSX.Element => {
         />
       </InputGroup>
 
-      {query ? <Button>Update provider</Button> : <Button>Add provider</Button>}
+      {query ? (
+        <Button>{t('queries.updateProvider')}</Button>
+      ) : (
+        <Button>{t('queries.addProvider')}</Button>
+      )}
     </ModalForm>
   );
 };

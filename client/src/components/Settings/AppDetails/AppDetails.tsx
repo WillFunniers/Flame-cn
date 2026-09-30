@@ -12,12 +12,17 @@ import { State } from '../../../store/reducers';
 // Other
 import { checkVersion } from '../../../utility';
 
+// i18n
+import { useT } from '../../../i18n';
+
 export const AppDetails = (): JSX.Element => {
+  const t = useT();
+
   const { isAuthenticated } = useSelector((state: State) => state.auth);
 
   return (
     <Fragment>
-      <SettingsHeadline text="Authentication" />
+      <SettingsHeadline text={t('app.authentication')} />
       <AuthForm />
 
       {isAuthenticated && (
@@ -25,7 +30,7 @@ export const AppDetails = (): JSX.Element => {
           <hr className={classes.separator} />
 
           <div>
-            <SettingsHeadline text="App version" />
+            <SettingsHeadline text={t('app.appVersion')} />
             <p className={classes.text}>
               <a
                 href="https://github.com/pawelmalak/flame"
@@ -34,21 +39,25 @@ export const AppDetails = (): JSX.Element => {
               >
                 Flame
               </a>{' '}
-              version {process.env.REACT_APP_VERSION}
+              {t('app.version', {
+                version: process.env.REACT_APP_VERSION as string,
+              })}
             </p>
 
             <p className={classes.text}>
-              See changelog{' '}
+              {t('app.seeChangelog')}
               <a
                 href="https://github.com/pawelmalak/flame/blob/master/CHANGELOG.md"
                 target="_blank"
                 rel="noreferrer"
               >
-                here
+                {t('app.changelogLink')}
               </a>
             </p>
 
-            <Button click={() => checkVersion(true)}>Check for updates</Button>
+            <Button click={() => checkVersion(true)}>
+              {t('app.checkForUpdates')}
+            </Button>
           </div>
         </Fragment>
       )}

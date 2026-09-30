@@ -15,6 +15,9 @@ import { State } from '../../store/reducers';
 import { bindActionCreators } from 'redux';
 import { actionCreators } from '../../store';
 
+// i18n
+import { useT } from '../../i18n';
+
 interface Props {
   setLocalSearch: (query: string) => void;
   appSearchResult: App[] | null;
@@ -22,6 +25,8 @@ interface Props {
 }
 
 export const SearchBar = (props: Props): JSX.Element => {
+  const t = useT();
+
   const { config, loading } = useSelector((state: State) => state.config);
 
   const dispatch = useDispatch();
@@ -82,8 +87,8 @@ export const SearchBar = (props: Props): JSX.Element => {
       if (!primarySearch.prefix) {
         // Prefix not found -> emit notification
         createNotification({
-          title: 'Error',
-          message: 'Prefix not found',
+          title: t('notify.error'),
+          message: t('error.prefixNotFound'),
         });
       } else if (isURL) {
         // URL or IP passed -> redirect

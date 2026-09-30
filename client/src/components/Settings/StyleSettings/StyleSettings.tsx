@@ -13,7 +13,12 @@ import { ApiResponse } from '../../../interfaces';
 import { InputGroup, Button } from '../../UI';
 import { applyAuth } from '../../../utility';
 
+// i18n
+import { useT } from '../../../i18n';
+
 export const StyleSettings = (): JSX.Element => {
+  const t = useT();
+
   const dispatch = useDispatch();
   const { createNotification } = bindActionCreators(actionCreators, dispatch);
 
@@ -42,8 +47,8 @@ export const StyleSettings = (): JSX.Element => {
       )
       .then(() => {
         createNotification({
-          title: 'Success',
-          message: 'CSS saved. Reload page to see changes',
+          title: t('notify.success'),
+          message: t('settings.cssSaved'),
         });
       })
       .catch((err) => console.log(err.response));
@@ -52,7 +57,7 @@ export const StyleSettings = (): JSX.Element => {
   return (
     <form onSubmit={(e) => formSubmitHandler(e)}>
       <InputGroup>
-        <label htmlFor="customStyles">Custom CSS</label>
+        <label htmlFor="customStyles">{t('settings.customCss')}</label>
         <textarea
           id="customStyles"
           name="customStyles"
@@ -61,7 +66,7 @@ export const StyleSettings = (): JSX.Element => {
           spellCheck={false}
         ></textarea>
       </InputGroup>
-      <Button>Save CSS</Button>
+      <Button>{t('settings.saveCss')}</Button>
     </form>
   );
 };

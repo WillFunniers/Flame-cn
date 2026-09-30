@@ -25,7 +25,12 @@ import { Header } from './Header/Header';
 // Utils
 import { escapeRegex } from '../../utility';
 
+// i18n
+import { useT } from '../../i18n';
+
 export const Home = (): JSX.Element => {
+  const t = useT();
+
   const {
     apps: { apps, loading: appsLoading },
     bookmarks: { categories, loading: bookmarksLoading },
@@ -74,7 +79,7 @@ export const Home = (): JSX.Element => {
       // Search through bookmarks
       const category = { ...categories[0] };
 
-      category.name = 'Search Results';
+      category.name = t('home.searchResults');
       category.bookmarks = categories
         .map(({ bookmarks }) => bookmarks)
         .flat()
@@ -87,7 +92,7 @@ export const Home = (): JSX.Element => {
       setAppSearchResult(null);
       setBookmarkSearchResult(null);
     }
-  }, [localSearch]);
+  }, [localSearch, t]);
 
   return (
     <Container>
@@ -107,8 +112,9 @@ export const Home = (): JSX.Element => {
       !apps.some((a) => a.isPinned) &&
       !categories.some((c) => c.isPinned) ? (
         <Message>
-          Welcome to Flame! Go to <Link to="/settings/app">/settings</Link>,
-          login and start customizing your new homepage
+          {t('home.welcomePrefix')}
+          <Link to="/settings/app">/settings</Link>
+          {t('home.welcomeSuffix')}
         </Message>
       ) : (
         <></>
@@ -116,7 +122,10 @@ export const Home = (): JSX.Element => {
 
       {!config.hideApps && (isAuthenticated || apps.some((a) => a.isPinned)) ? (
         <Fragment>
-          <SectionHeadline title="Applications" link="/applications" />
+          <SectionHeadline
+            title={t('home.applicationsSection')}
+            link="/applications"
+          />
           {appsLoading ? (
             <Spinner />
           ) : (
@@ -139,7 +148,10 @@ export const Home = (): JSX.Element => {
       {!config.hideCategories &&
       (isAuthenticated || categories.some((c) => c.isPinned)) ? (
         <Fragment>
-          <SectionHeadline title="Bookmarks" link="/bookmarks" />
+          <SectionHeadline
+            title={t('home.bookmarksSection')}
+            link="/bookmarks"
+          />
           {bookmarksLoading ? (
             <Spinner />
           ) : (

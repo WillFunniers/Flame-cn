@@ -6,11 +6,16 @@ import { App } from '../../../interfaces';
 import { useSelector } from 'react-redux';
 import { State } from '../../../store/reducers';
 
+// i18n
+import { useT } from '../../../i18n';
+
 interface Props {
   app: App;
 }
 
 export const AppCard = ({ app }: Props): JSX.Element => {
+  const t = useT();
+
   const { config } = useSelector((state: State) => state.config);
 
   const [displayUrl, redirectUrl] = urlParser(app.url);
@@ -24,7 +29,7 @@ export const AppCard = ({ app }: Props): JSX.Element => {
     iconEl = (
       <img
         src={source}
-        alt={`${app.name} icon`}
+        alt={t('apps.iconAlt', { name: app.name })}
         className={classes.CustomIcon}
       />
     );

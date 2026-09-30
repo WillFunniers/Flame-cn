@@ -8,6 +8,9 @@ import { State } from '../../../../store/reducers';
 
 // UI
 import { Button, InputGroup, ModalForm } from '../../../UI';
+
+// i18n
+import { useT } from '../../../../i18n';
 import classes from './ThemeCreator.module.css';
 
 // Other
@@ -18,6 +21,8 @@ interface Props {
 }
 
 export const ThemeCreator = ({ modalHandler }: Props): JSX.Element => {
+  const t = useT();
+
   const {
     theme: { activeTheme, themeInEdit },
   } = useSelector((state: State) => state);
@@ -92,7 +97,7 @@ export const ThemeCreator = ({ modalHandler }: Props): JSX.Element => {
   return (
     <ModalForm formHandler={formHandler} modalHandler={closeModal}>
       <InputGroup>
-        <label htmlFor="name">Theme name</label>
+        <label htmlFor="name">{t('theme.themeName')}</label>
         <input
           type="text"
           name="name"
@@ -106,7 +111,7 @@ export const ThemeCreator = ({ modalHandler }: Props): JSX.Element => {
 
       <div className={classes.ColorsContainer}>
         <InputGroup>
-          <label htmlFor="primary">Primary color</label>
+          <label htmlFor="primary">{t('theme.primaryColor')}</label>
           <input
             type="color"
             name="primary"
@@ -118,7 +123,7 @@ export const ThemeCreator = ({ modalHandler }: Props): JSX.Element => {
         </InputGroup>
 
         <InputGroup>
-          <label htmlFor="accent">Accent color</label>
+          <label htmlFor="accent">{t('theme.accentColor')}</label>
           <input
             type="color"
             name="accent"
@@ -130,7 +135,7 @@ export const ThemeCreator = ({ modalHandler }: Props): JSX.Element => {
         </InputGroup>
 
         <InputGroup>
-          <label htmlFor="background">Background color</label>
+          <label htmlFor="background">{t('theme.backgroundColor')}</label>
           <input
             type="color"
             name="background"
@@ -143,9 +148,9 @@ export const ThemeCreator = ({ modalHandler }: Props): JSX.Element => {
       </div>
 
       {!themeInEdit ? (
-        <Button>Add theme</Button>
+        <Button>{t('theme.addTheme')}</Button>
       ) : (
-        <Button>Update theme</Button>
+        <Button>{t('theme.updateTheme')}</Button>
       )}
     </ModalForm>
   );

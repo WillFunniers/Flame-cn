@@ -23,11 +23,16 @@ import { State } from '../../store/reducers';
 import { bindActionCreators } from 'redux';
 import { actionCreators } from '../../store';
 
+// i18n
+import { useT } from '../../i18n';
+
 interface Props {
   searching: boolean;
 }
 
 export const Apps = (props: Props): JSX.Element => {
+  const t = useT();
+
   // Get Redux state
   const {
     apps: { apps, loading },
@@ -78,21 +83,25 @@ export const Apps = (props: Props): JSX.Element => {
       </Modal>
 
       <Headline
-        title="All Applications"
-        subtitle={<Link to="/">Go back</Link>}
+        title={t('apps.allApplications')}
+        subtitle={<Link to="/">{t('ui.goBack')}</Link>}
       />
 
       {isAuthenticated && (
         <div className={classes.ActionsContainer}>
           <ActionButton
-            name="Add"
+            name={t('apps.add')}
             icon="mdiPlusBox"
             handler={() => {
               setEditApp(null);
               toggleModal();
             }}
           />
-          <ActionButton name="Edit" icon="mdiPencil" handler={toggleEdit} />
+          <ActionButton
+            name={t('apps.edit')}
+            icon="mdiPencil"
+            handler={toggleEdit}
+          />
         </div>
       )}
 

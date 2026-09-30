@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { Dispatch } from 'redux';
 import { applyAuth } from '../../utility';
+import { t } from '../../i18n';
 import { ActionType } from '../action-types';
 
 import {
@@ -63,8 +64,8 @@ export const addCategory =
       dispatch<any>({
         type: ActionType.createNotification,
         payload: {
-          title: 'Success',
-          message: `Category ${formData.name} created`,
+          title: t('notify.success'),
+          message: t('bookmarks.categoryCreated', { name: formData.name }),
         },
       });
 
@@ -92,8 +93,8 @@ export const addBookmark =
       dispatch<any>({
         type: ActionType.createNotification,
         payload: {
-          title: 'Success',
-          message: `Bookmark created`,
+          title: t('notify.success'),
+          message: t('bookmarks.bookmarkCreated'),
         },
       });
 
@@ -119,14 +120,14 @@ export const pinCategory =
       );
 
       const status = isPinned
-        ? 'unpinned from Homescreen'
-        : 'pinned to Homescreen';
+        ? t('bookmarks.unpinnedStatus')
+        : t('bookmarks.pinnedStatus');
 
       dispatch<any>({
         type: ActionType.createNotification,
         payload: {
-          title: 'Success',
-          message: `Category ${name} ${status}`,
+          title: t('notify.success'),
+          message: t('bookmarks.pinMessage', { name, status }),
         },
       });
 
@@ -149,8 +150,8 @@ export const deleteCategory =
       dispatch<any>({
         type: ActionType.createNotification,
         payload: {
-          title: 'Success',
-          message: `Category deleted`,
+          title: t('notify.success'),
+          message: t('bookmarks.categoryDeleted'),
         },
       });
 
@@ -176,8 +177,8 @@ export const updateCategory =
       dispatch<any>({
         type: ActionType.createNotification,
         payload: {
-          title: 'Success',
-          message: `Category ${formData.name} updated`,
+          title: t('notify.success'),
+          message: t('bookmarks.categoryUpdated', { name: formData.name }),
         },
       });
 
@@ -203,8 +204,8 @@ export const deleteBookmark =
       dispatch<any>({
         type: ActionType.createNotification,
         payload: {
-          title: 'Success',
-          message: 'Bookmark deleted',
+          title: t('notify.success'),
+          message: t('bookmarks.bookmarkDeleted'),
         },
       });
 
@@ -244,8 +245,8 @@ export const updateBookmark =
       dispatch<any>({
         type: ActionType.createNotification,
         payload: {
-          title: 'Success',
-          message: `Bookmark updated`,
+          title: t('notify.success'),
+          message: t('bookmarks.bookmarkUpdated'),
         },
       });
 

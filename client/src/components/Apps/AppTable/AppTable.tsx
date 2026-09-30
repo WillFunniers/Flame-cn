@@ -20,11 +20,16 @@ import { App } from '../../../interfaces';
 import { Message, Table } from '../../UI';
 import { TableActions } from '../../Actions/TableActions';
 
+// i18n
+import { useT } from '../../../i18n';
+
 interface Props {
   openFormForUpdating: (app: App) => void;
 }
 
 export const AppTable = (props: Props): JSX.Element => {
+  const t = useT();
+
   const {
     apps: { apps },
     config: { config },
@@ -44,8 +49,8 @@ export const AppTable = (props: Props): JSX.Element => {
   const dragEndHanlder = (result: DropResult): void => {
     if (config.useOrdering !== 'orderId') {
       createNotification({
-        title: 'Error',
-        message: 'Custom order is disabled',
+        title: t('notify.error'),
+        message: t('error.customOrderDisabled'),
       });
       return;
     }
@@ -64,7 +69,7 @@ export const AppTable = (props: Props): JSX.Element => {
 
   // Action handlers
   const deleteAppHandler = (id: number, name: string) => {
-    const proceed = window.confirm(`Are you sure you want to delete ${name}?`);
+    const proceed = window.confirm(t('apps.deleteConfirm', { name }));
 
     if (proceed) {
       deleteApp(id);
@@ -90,11 +95,11 @@ export const AppTable = (props: Props): JSX.Element => {
     <Fragment>
       <Message isPrimary={false}>
         {config.useOrdering === 'orderId' ? (
-          <p>You can drag and drop single rows to reorder application</p>
+          <p>{t('apps.dragReorderHint')}</p>
         ) : (
           <p>
-            Custom order is disabled. You can change it in the{' '}
-            <Link to="/settings/general">settings</Link>
+            {t('apps.customOrderDisabledBefore')}
+            <Link to="/settings/general">{t('apps.settingsLink')}</Link>
           </p>
         )}
       </Message>
@@ -103,7 +108,13 @@ export const AppTable = (props: Props): JSX.Element => {
         <Droppable droppableId="apps">
           {(provided) => (
             <Table
-              headers={['Name', 'URL', 'Icon', 'Visibility', 'Actions']}
+              headers={[
+                t('ui.name'),
+                t('ui.url'),
+                t('ui.icon'),
+                t('ui.visibility'),
+                t('ui.actions'),
+              ]}
               innerRef={provided.innerRef}
             >
               {localApps.map((app: App, index): JSX.Element => {
@@ -133,7 +144,9 @@ export const AppTable = (props: Props): JSX.Element => {
                           <td style={{ width: '200px' }}>{app.url}</td>
                           <td style={{ width: '200px' }}>{app.icon}</td>
                           <td style={{ width: '200px' }}>
-                            {app.isPublic ? 'Visible' : 'Hidden'}
+                            {app.isPublic
+                              ? t('apps.visible')
+                              : t('apps.hidden')}
                           </td>
 
                           {!snapshot.isDragging && (

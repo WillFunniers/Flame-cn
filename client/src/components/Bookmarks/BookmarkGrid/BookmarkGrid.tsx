@@ -7,6 +7,9 @@ import { Category } from '../../../interfaces';
 import { BookmarkCard } from '../BookmarkCard/BookmarkCard';
 import { Message } from '../../UI';
 
+// i18n
+import { useT } from '../../../i18n';
+
 interface Props {
   categories: Category[];
   totalCategories?: number;
@@ -15,6 +18,8 @@ interface Props {
 }
 
 export const BookmarkGrid = (props: Props): JSX.Element => {
+  const t = useT();
+
   const {
     categories,
     totalCategories,
@@ -26,19 +31,17 @@ export const BookmarkGrid = (props: Props): JSX.Element => {
 
   if (categories.length) {
     if (searching && !categories[0].bookmarks.length) {
-      bookmarks = <Message>No bookmarks match your search criteria</Message>;
+      bookmarks = <Message>{t('bookmarks.noMatch')}</Message>;
     } else {
       bookmarks = (
         <div className={classes.BookmarkGrid}>
-          {categories.map(
-            (category: Category): JSX.Element => (
-              <BookmarkCard
-                category={category}
-                fromHomepage={fromHomepage}
-                key={category.id}
-              />
-            )
-          )}
+          {categories.map((category: Category): JSX.Element => (
+            <BookmarkCard
+              category={category}
+              fromHomepage={fromHomepage}
+              key={category.id}
+            />
+          ))}
         </div>
       );
     }
@@ -46,15 +49,17 @@ export const BookmarkGrid = (props: Props): JSX.Element => {
     if (totalCategories) {
       bookmarks = (
         <Message>
-          There are no pinned categories. You can pin them from the{' '}
-          <Link to="/bookmarks">/bookmarks</Link> menu
+          {t('bookmarks.emptyPinnedPrefix')}
+          <Link to="/bookmarks">/bookmarks</Link>
+          {t('bookmarks.emptyPinnedSuffix')}
         </Message>
       );
     } else {
       bookmarks = (
         <Message>
-          You don't have any bookmarks. You can add a new one from{' '}
-          <Link to="/bookmarks">/bookmarks</Link> menu
+          {t('bookmarks.emptyNonePrefix')}
+          <Link to="/bookmarks">/bookmarks</Link>
+          {t('bookmarks.emptyNoneSuffix')}
         </Message>
       );
     }

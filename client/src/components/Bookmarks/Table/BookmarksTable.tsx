@@ -20,11 +20,16 @@ import { Message, Table } from '../../UI';
 import { TableActions } from '../../Actions/TableActions';
 import { bookmarkTemplate } from '../../../utility';
 
+// i18n
+import { useT } from '../../../i18n';
+
 interface Props {
   openFormForUpdating: (data: Category | Bookmark) => void;
 }
 
 export const BookmarksTable = ({ openFormForUpdating }: Props): JSX.Element => {
+  const t = useT();
+
   const {
     bookmarks: { categoryInEdit },
     config: { config },
@@ -51,8 +56,8 @@ export const BookmarksTable = ({ openFormForUpdating }: Props): JSX.Element => {
   const dragEndHanlder = (result: DropResult): void => {
     if (config.useOrdering !== 'orderId') {
       createNotification({
-        title: 'Error',
-        message: 'Custom order is disabled',
+        title: t('notify.error'),
+        message: t('error.customOrderDisabled'),
       });
       return;
     }
@@ -75,7 +80,7 @@ export const BookmarksTable = ({ openFormForUpdating }: Props): JSX.Element => {
   const deleteBookmarkHandler = (id: number, name: string) => {
     const categoryId = categoryInEdit?.id || -1;
 
-    const proceed = window.confirm(`Are you sure you want to delete ${name}?`);
+    const proceed = window.confirm(t('bookmarks.deleteConfirm', { name }));
     if (proceed) {
       deleteBookmark(id, categoryId);
     }
@@ -105,13 +110,12 @@ export const BookmarksTable = ({ openFormForUpdating }: Props): JSX.Element => {
   return (
     <Fragment>
       {!categoryInEdit ? (
-        <Message isPrimary={false}>
-          Switch to grid view and click on the name of category you want to edit
-        </Message>
+        <Message isPrimary={false}>{t('bookmarks.switchToGridHint')}</Message>
       ) : (
         <Message isPrimary={false}>
-          Editing bookmarks from&nbsp;<span>{categoryInEdit.name}</span>
-          &nbsp;category
+          {t('bookmarks.editingFromPrefix')}&nbsp;
+          <span>{categoryInEdit.name}</span>&nbsp;
+          {t('bookmarks.editingFromSuffix')}
         </Message>
       )}
 
@@ -121,12 +125,12 @@ export const BookmarksTable = ({ openFormForUpdating }: Props): JSX.Element => {
             {(provided) => (
               <Table
                 headers={[
-                  'Name',
-                  'URL',
-                  'Icon',
-                  'Visibility',
-                  'Category',
-                  'Actions',
+                  t('ui.name'),
+                  t('ui.url'),
+                  t('ui.icon'),
+                  t('ui.visibility'),
+                  t('ui.category'),
+                  t('ui.actions'),
                 ]}
                 innerRef={provided.innerRef}
               >
@@ -157,7 +161,9 @@ export const BookmarksTable = ({ openFormForUpdating }: Props): JSX.Element => {
                             <td style={{ width: '200px' }}>{bookmark.url}</td>
                             <td style={{ width: '200px' }}>{bookmark.icon}</td>
                             <td style={{ width: '200px' }}>
-                              {bookmark.isPublic ? 'Visible' : 'Hidden'}
+                              {bookmark.isPublic
+                                ? t('bookmarks.visible')
+                                : t('bookmarks.hidden')}
                             </td>
                             <td style={{ width: '200px' }}>
                               {categoryInEdit.name}

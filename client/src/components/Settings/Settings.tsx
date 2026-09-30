@@ -23,10 +23,15 @@ import { ProtectedRoute } from '../Routing/ProtectedRoute';
 // UI
 import { Container, Headline } from '../UI';
 
+// i18n
+import { useT } from '../../i18n';
+
 // Data
 import clientRoutes from './settings.json';
 
 export const Settings = (): JSX.Element => {
+  const t = useT();
+
   const routes = clientRoutes.routes;
 
   const { isAuthenticated } = useSelector((state: State) => state.auth);
@@ -35,21 +40,31 @@ export const Settings = (): JSX.Element => {
 
   return (
     <Container>
-      <Headline title="Settings" subtitle={<Link to="/">Go back</Link>} />
+      <Headline
+        title={t('nav.settings')}
+        subtitle={<Link to="/">{t('ui.goBack')}</Link>}
+      />
       <div className={classes.Settings}>
         {/* NAVIGATION MENU */}
         <nav className={classes.SettingsNav}>
-          {tabs.map(({ name, dest }: SettingsRoute, idx) => (
-            <NavLink
-              className={classes.SettingsNavLink}
-              activeClassName={classes.SettingsNavLinkActive}
-              exact
-              to={dest}
-              key={idx}
-            >
-              {name}
-            </NavLink>
-          ))}
+          {tabs.map(({ name, dest }: SettingsRoute, idx) => {
+            // settings.json keeps the upstream route names; translate at render
+            // time and fall back to the original name when a key is missing.
+            const navKey = `nav.${name.toLowerCase()}`;
+            const label = t(navKey);
+
+            return (
+              <NavLink
+                className={classes.SettingsNavLink}
+                activeClassName={classes.SettingsNavLinkActive}
+                exact
+                to={dest}
+                key={idx}
+              >
+                {label === navKey ? name : label}
+              </NavLink>
+            );
+          })}
         </nav>
 
         {/* ROUTES */}

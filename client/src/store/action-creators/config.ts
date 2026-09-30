@@ -12,6 +12,7 @@ import { ApiResponse, Config, Query } from '../../interfaces';
 import { ActionType } from '../action-types';
 import { storeUIConfig, applyAuth } from '../../utility';
 import { ConfigFormData } from '../../types';
+import { t } from '../../i18n';
 
 const keys: (keyof Config)[] = [
   'useAmericanDate',
@@ -58,8 +59,8 @@ export const updateConfig =
       dispatch<any>({
         type: ActionType.createNotification,
         payload: {
-          title: 'Success',
-          message: 'Settings updated',
+          title: t('notify.success'),
+          message: t('settings.updated'),
         },
       });
 
@@ -108,7 +109,7 @@ export const addQuery =
       dispatch<any>({
         type: ActionType.createNotification,
         payload: {
-          title: 'Error',
+          title: t('notify.error'),
           message: error.response?.data.error,
         },
       });

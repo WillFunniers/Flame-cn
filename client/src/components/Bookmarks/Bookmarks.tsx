@@ -23,6 +23,9 @@ import {
   Message,
 } from '../UI';
 
+// i18n
+import { useT } from '../../i18n';
+
 // Components
 import { BookmarkGrid } from './BookmarkGrid/BookmarkGrid';
 import { Form } from './Form/Form';
@@ -38,6 +41,8 @@ export enum ContentType {
 }
 
 export const Bookmarks = (props: Props): JSX.Element => {
+  const t = useT();
+
   // Get Redux state
   const {
     bookmarks: { loading, categories, categoryInEdit },
@@ -143,28 +148,31 @@ export const Bookmarks = (props: Props): JSX.Element => {
         />
       </Modal>
 
-      <Headline title="All Bookmarks" subtitle={<Link to="/">Go back</Link>} />
+      <Headline
+        title={t('bookmarks.allBookmarks')}
+        subtitle={<Link to="/">{t('ui.goBack')}</Link>}
+      />
 
       {isAuthenticated && (
         <div className={classes.ActionsContainer}>
           <ActionButton
-            name="Add Category"
+            name={t('bookmarks.addCategory')}
             icon="mdiPlusBox"
             handler={() => openFormForAdding(ContentType.category)}
           />
           <ActionButton
-            name="Add Bookmark"
+            name={t('bookmarks.addBookmark')}
             icon="mdiPlusBox"
             handler={() => openFormForAdding(ContentType.bookmark)}
           />
           <ActionButton
-            name="Edit Categories"
+            name={t('bookmarks.editCategories')}
             icon="mdiPencil"
             handler={() => showTableForEditing(ContentType.category)}
           />
           {showTable && tableContentType === ContentType.bookmark && (
             <ActionButton
-              name="Finish Editing"
+              name={t('bookmarks.finishEditing')}
               icon="mdiPencil"
               handler={finishEditing}
             />
@@ -173,9 +181,7 @@ export const Bookmarks = (props: Props): JSX.Element => {
       )}
 
       {categories.length && isAuthenticated && !showTable ? (
-        <Message isPrimary={false}>
-          Click on category name to edit its bookmarks
-        </Message>
+        <Message isPrimary={false}>{t('bookmarks.clickCategoryHint')}</Message>
       ) : (
         <></>
       )}
