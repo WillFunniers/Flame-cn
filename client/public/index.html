@@ -53,6 +53,28 @@
       content="Flame - self-hosted startpage for your server"
     />
     <link rel="stylesheet" href="%PUBLIC_URL%/flame.css" />
+    <!-- Anime skin bootstrap: mirror of utility/animeTheme.ts
+         applyBootThemeStyle(). Keeps the first paint from flashing the default
+         look when a skin was chosen in a previous session. Local storage is
+         wrapped in try/catch so private mode simply keeps the upstream look. -->
+    <script>
+      (function () {
+        try {
+          var style = window.localStorage.getItem('flame.style');
+          if (style !== 'anime-light' && style !== 'anime-dark') {
+            style = 'default';
+          }
+          var root = document.documentElement;
+          root.setAttribute('data-theme', style);
+          root.setAttribute(
+            'data-bg',
+            window.localStorage.getItem('flame.bg') === 'off' ? 'off' : 'on'
+          );
+        } catch (error) {
+          /* storage unavailable: keep the upstream default look */
+        }
+      })();
+    </script>
     <title>Flame</title>
   </head>
   <body>

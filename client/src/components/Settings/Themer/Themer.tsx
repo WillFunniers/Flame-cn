@@ -9,8 +9,12 @@ import { State } from '../../../store/reducers';
 // Typescript
 import { Theme, ThemeSettingsForm } from '../../../interfaces';
 
+// i18n
+import { useT } from '../../../i18n';
+
 // Components
 import { Button, InputGroup, SettingsHeadline, Spinner } from '../../UI';
+import { AnimeStyle } from './AnimeStyle/AnimeStyle';
 import { ThemeBuilder } from './ThemeBuilder/ThemeBuilder';
 import { ThemeGrid } from './ThemeGrid/ThemeGrid';
 
@@ -22,6 +26,8 @@ import {
 } from '../../../utility';
 
 export const Themer = (): JSX.Element => {
+  const t = useT();
+
   const {
     auth: { isAuthenticated },
     config: { loading, config },
@@ -66,23 +72,27 @@ export const Themer = (): JSX.Element => {
 
   const customThemesEl = (
     <Fragment>
-      <SettingsHeadline text="User themes" />
+      <SettingsHeadline text={t('theme.userThemes')} />
       <ThemeBuilder themes={userThemes} />
     </Fragment>
   );
 
   return (
     <Fragment>
-      <SettingsHeadline text="App themes" />
+      <AnimeStyle />
+
+      <SettingsHeadline text={t('theme.appThemes')} />
       {!themes.length ? <Spinner /> : <ThemeGrid themes={themes} />}
 
       {!userThemes.length ? isAuthenticated && customThemesEl : customThemesEl}
 
       {isAuthenticated && (
         <form onSubmit={formSubmitHandler}>
-          <SettingsHeadline text="Other settings" />
+          <SettingsHeadline text={t('theme.otherSettings')} />
           <InputGroup>
-            <label htmlFor="defaultTheme">Default theme for new users</label>
+            <label htmlFor="defaultTheme">
+              {t('theme.defaultThemeForNewUsers')}
+            </label>
             <select
               id="defaultTheme"
               name="defaultTheme"
@@ -97,7 +107,7 @@ export const Themer = (): JSX.Element => {
             </select>
           </InputGroup>
 
-          <Button>Save changes</Button>
+          <Button>{t('ui.saveChanges')}</Button>
         </form>
       )}
     </Fragment>
