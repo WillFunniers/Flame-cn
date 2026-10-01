@@ -1,6 +1,6 @@
-# Flame-cn 使用说明书（Phase 1.1）
+# Flame-cn 使用说明书（v2.4.0-zh.2）
 
-> 面向第一次使用 Flame 的人。本文按**你当前实际运行的这一版**（Flame-cn **Phase 1.1**，commit `f101b04`：中文 i18n + 上游原生主题 + 独立壁纸 + 可选和风天气）编写，界面上的名称都是你在页面上真实看到的文字。
+> 面向第一次使用 Flame 的人。本文按**你当前实际运行的这一版**（Flame-cn **v2.4.0-zh.2**，commit `06c3a5b`：中文 i18n + 上游原生主题 + 独立壁纸 + 和风天气 JWT 认证）编写，界面上的名称都是你在页面上真实看到的文字。
 >
 > 你的访问地址：**http://192.168.x.x:5005/**
 
@@ -77,7 +77,7 @@ podman rm -f flame-zh
 podman run -d --name flame-zh -p 5005:5005 \
   -e PASSWORD='你自己设一个强密码' \
   -v $HOME/flame-runtime-data:/app/data \
-  flame-zh:phase1.1
+  flame-zh:v2.4.0-zh.2
 ```
 
 改完用新密码重新登录即可。**忘了密码**也照这个流程重设。
@@ -336,23 +336,73 @@ podman run -d --name flame-zh -p 5005:5005 \
 |---|---|---|
 | Key 存哪 | 存在配置文件里，**从设置页填写** | **只读容器环境变量**，设置页不填也不显示 |
 | 谁需要 key | 你自己去 <https://www.weatherapi.com/pricing.aspx> 注册 | 你自己去和风天气控制台申请 |
+| 认证方式 | 一个 API Key | **Ed25519 JWT（推荐，自动轮换）** 或 API Key |
 | 中国境内精度 | 一般 | 更好（中文天气描述） |
-| 启用方式 | 设置页填 key → 保存 | 启动容器时加两个 `-e` 环境变量 → 设置页选「和风天气」→ 保存 |
+| 启用方式 | 设置页填 key → 保存 | 启动容器时给环境变量 → 设置页选「和风天气」→ 保存 |
 
-> 🔐 **为什么和风天气的 Key 不能填在网页里**：页面上的设置会存进配置文件并被浏览器读取（上游 Flame 就是这么设计的），那样 Key 就等于公开了。所以和风天气的密钥**只从服务器环境变量读取，永远不会发到浏览器**。
+> 🔐 **为什么和风天气的凭据不能填在网页里**：页面上的设置会存进配置文件并被浏览器读取（上游 Flame 就是这么设计的），那样凭据就等于公开了。所以和风天气的凭据**只从服务器环境变量读取，永远不会发到浏览器**。API Host、Credential ID、私钥路径也一样不会出现在页面上。
+
+**启用和风天气（推荐：Ed25519 JWT）**
+
+1. 在宿主机生成密钥对，把**公钥**上传到和风天气控制台（「项目管理」→ 添加凭据 → JSON Web Token）：
+
+```bash
+mkdir -p ~/qweather && cd ~/qweather
+openssl genpkey -algorithm ED25519 -out ed25519-private.pem
+openssl pkey -pubout -in ed25519-private.pem > ed25519-public.pem
+chmod 600 ed25519-private.pem
+cat ed25519-public.pem          # 把这段输出粘贴到控制台
+```
+
+2. 写一个 env 文件。**不要用 `-e 变量=值` 传凭据** —— 那样凭据会明文出现在 `ps` 和 `podman inspect` 里：
+
+```bash
+cat > ~/qweather/qweather.env <<'EOF'
+QWEATHER_API_HOST=你的专属APIHost
+QWEATHER_AUTH_MODE=jwt
+QWEATHER_KEY_ID=你的CredentialID
+QWEATHER_DEVELOPER_ID=你的DeveloperID
+QWEATHER_PROJECT_ID=你的ProjectID
+QWEATHER_PRIVATE_KEY_PATH=/run/secrets/qweather_ed25519.pem
+EOF
+chmod 600 ~/qweather/qweather.env
+```
+
+其中 `QWEATHER_API_HOST` 从控制台「设置」里复制（形如 `abcxyz.xy.qweatherapi.com`，**不带** `https://`）。
+
+3. 启动容器，把私钥以**只读**方式挂进去：
+
+```bash
+podman rm -f flame-zh
+podman run -d --name flame-zh -p 5005:5005 \
+  -e PASSWORD='你的密码' \
+  --env-file ~/qweather/qweather.env \
+  -v ~/qweather/ed25519-private.pem:/run/secrets/qweather_ed25519.pem:ro \
+  -v $HOME/flame-runtime-data:/app/data \
+  flame-zh:v2.4.0-zh.2
+```
+
+4. 设置 →「天气」→ **天气服务 = 和风天气** → 保存。状态显示「已配置」即成功。
+
+> ⚠️ **`QWEATHER_API_HOST` 必须是控制台给你的专属 Host。** 旧的公共地址 `api.qweather.com` / `devapi.qweather.com` / `geoapi.qweather.com` 自 2026 年起逐步停用，本版会**直接拒绝**这些地址（状态显示「未配置」），**不会**静默回落到公共地址。
 >
-> **启用和风天气**（二选一，在宿主机执行）：
-> ```bash
-> podman rm -f flame-zh
-> podman run -d --name flame-zh -p 5005:5005 \
->   -e PASSWORD='你的密码' \
->   -e QWEATHER_API_HOST='你的APIHost（形如 xxxxxx.qweatherapi.com，不带 https://）' \
->   -e QWEATHER_API_KEY='你的Key' \
->   -v $HOME/flame-runtime-data:/app/data \
->   flame-zh:phase1.1
-> ```
-> 然后 设置 →「天气」→ **天气服务 = 和风天气** → 保存。状态显示「已配置」即成功。
-> 没配置就选「和风天气」时，页面会提示「未配置」，天气组件不显示，**不会影响 Flame 其他任何功能**。
+> 界面上只显示「已配置 / 未配置」和认证方式，**不显示** Host、Credential ID、JWT 或私钥路径。
+
+**兼容方式：只用 API Key**
+
+如果你暂时只想用控制台里创建的 API Key：
+
+```
+QWEATHER_API_HOST=你的专属APIHost
+QWEATHER_AUTH_MODE=api-key
+QWEATHER_API_KEY=你的Key
+```
+
+> 🔺 **从 zh.1 升级上来的人必读**：本版起 **`QWEATHER_AUTH_MODE` 是必填项**。
+> - 只带 `QWEATHER_API_KEY`、不带 `QWEATHER_AUTH_MODE` → 状态显示「未配置」，天气组件不显示。
+> - 补上 `QWEATHER_AUTH_MODE=api-key` 即可恢复，或者直接换成上面的 JWT 方式。
+> - 这两种认证方式**不会同时发送**，由 `QWEATHER_AUTH_MODE` 明确决定用哪一种。
+> - 以上都**只影响天气功能**，不影响 Flame 其他任何功能。
 
 ### 8.5 Docker
 
@@ -498,7 +548,7 @@ podman start flame-zh
 | 项 | 值 |
 |---|---|
 | 容器名 | `flame-zh` |
-| 镜像 | `localhost/flame-zh:phase1.1` |
+| 镜像 | `localhost/flame-zh:v2.4.0-zh.2` |
 | 端口 | `5005`（`0.0.0.0:5005->5005`） |
 | 数据卷 | `$HOME/flame-runtime-data -> /app/data` |
 
@@ -518,10 +568,10 @@ podman images | grep flame         # 看镜像
 
 ```bash
 cd $HOME/Flame
-podman build --network=host -f .docker/Dockerfile -t flame-zh:phase1.1 .
+podman build --network=host -f .docker/Dockerfile -t flame-zh:v2.4.0-zh.2 .
 podman rm -f flame-zh
 podman run -d --name flame-zh -p 5005:5005 -e PASSWORD='你的密码' \
-  -v $HOME/flame-runtime-data:/app/data flame-zh:phase1.1
+  -v $HOME/flame-runtime-data:/app/data flame-zh:v2.4.0-zh.2
 ```
 
 ### 想开机自动启动（可选）
@@ -551,7 +601,7 @@ cat > ~/.config/containers/systemd/flame-zh.container <<'EOF'
 Description=Flame-cn self-hosted start page
 
 [Container]
-Image=localhost/flame-zh:phase1.1
+Image=localhost/flame-zh:v2.4.0-zh.2
 ContainerName=flame-zh
 PublishPort=5005:5005
 Environment=PASSWORD=你的密码
@@ -613,7 +663,10 @@ podman restart flame-zh
 **Q：天气不显示？**
 先看 设置 →「天气」→ **天气服务**选的是哪个：
 - 选「Flame 默认」→ 需要联网 + 填 `weatherapi.com` 的免费 API key + 填好经纬度
-- 选「和风天气」→ 需要容器启动时带了 `QWEATHER_API_HOST` / `QWEATHER_API_KEY` 两个环境变量；设置页会显示「已配置 / 未配置」
+- 选「和风天气」→ 需要容器启动时带齐环境变量，设置页会显示「已配置 / 未配置」：
+  - JWT 方式：`QWEATHER_API_HOST` + `QWEATHER_AUTH_MODE=jwt` + `QWEATHER_KEY_ID` + `QWEATHER_DEVELOPER_ID` + `QWEATHER_PROJECT_ID` + `QWEATHER_PRIVATE_KEY_PATH`（私钥文件要只读挂载进容器）
+  - API Key 方式：`QWEATHER_API_HOST` + `QWEATHER_AUTH_MODE=api-key` + `QWEATHER_API_KEY`
+  - 详见 [§8.4](#84-天气)
 
 另外天气组件只有在**拿到过至少一次数据**后才显示。
 
@@ -658,25 +711,26 @@ podman restart flame-zh
 3. 如果确实要对外发布，请用反向代理加 HTTPS，并考虑加一层 Basic Auth 或只允许白名单 IP。
 4. 定期备份 `$HOME/flame-runtime-data`。
 5. 不要把 `data/.secret` 泄露出去（它用于签发登录 token）。
-6. **和风天气的 Key 只放在服务器环境变量里**，不要填进设置页、不要写进任何前端代码或配置文件。
+6. **和风天气的凭据（API Key / JWT 私钥）只放在服务器环境变量和只读挂载的密钥文件里**，不要填进设置页、不要写进任何前端代码或配置文件，也不要用 `-e 变量=值` 传（会明文出现在 `ps` / `podman inspect` 里）。
 7. 注意：原版 Flame 会把「Flame 默认」天气服务的 API 密钥存进配置文件并下发给浏览器；如果介意，请改用和风天气（服务端凭据）。
 
 ---
 
 ## 附：本版本相对原版 Flame 的差异（速查）
 
-| 项 | 本版（Flame-cn Phase 1.1） |
+| 项 | 本版（Flame-cn v2.4.0-zh.2） |
 |---|---|
 | 界面语言 | 简体中文 / English 可切换（默认跟随浏览器） |
 | 主题 | **与原版完全一致**：16 套内置主题 + 自定义主题，可随时回原版外观 |
 | 壁纸 | **新增独立背景层**（`data-bg` 开关），本地图片 `/uploads/wallpaper.png`，与主题解耦、带兜底 |
 | CSS DIY | 原版「CSS」页签保留，未改动 |
 | 天气 | 新增 **和风天气（QWeather）** 作为可选服务端 Provider；默认仍是原版 WeatherAPI.com，原行为不变 |
-| 密钥安全 | 和风天气 Key 只走服务端环境变量，**绝不下发浏览器** |
+| 和风天气认证 | **新增 Ed25519 JWT 动态签发**（Node 内置 `crypto`，无新增依赖，token 自动缓存/续签），同时保留 API Key 兼容；认证方式由 `QWEATHER_AUTH_MODE` 显式决定，两者**不会同时发送** |
+| 密钥安全 | 凭据只走服务端环境变量 + 只读挂载的 PEM，**绝不下发浏览器**；`/api/weather/status` 不返回 Host 与任何凭据；上游错误信息保留 `type/title/detail/invalidParams` 但已脱敏 |
 | 后端 | 原天气流程未重写（Provider 最小改造）；数据格式与上游完全兼容 |
 | Docker 集成 | 保持原样（**未增加 Podman 支持**） |
-| 版本 | Phase 1.1（commit `f101b04`，基于上游 Flame `v2.4.0`）；上一个发布 tag 为 `v2.4.0-zh.1` |
+| 版本 | `v2.4.0-zh.2`（commit `06c3a5b`，基于上游 Flame `v2.4.0`）；上一个发布 tag 为 `v2.4.0-zh.1`（`bc3962d`） |
 
 ---
 
-*文档对应版本：Flame-cn **Phase 1.1**（commit `f101b04`）· 基于上游 pawelmalak/flame `3e03c25` · 2026-09-30*
+*文档对应版本：Flame-cn **v2.4.0-zh.2**（commit `06c3a5b`）· 基于上游 pawelmalak/flame `3e03c25` · 2026-09-30*

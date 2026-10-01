@@ -1,3 +1,25 @@
+> ## 🇨🇳 Flame-cn（中文二创分支）
+>
+> 这个仓库是 [pawelmalak/flame](https://github.com/pawelmalak/flame) 的**中文二创分支**。相对上游增加：
+>
+> - 🈶 **完整中文界面**（简体中文 / English 可切换，默认跟随浏览器语言）
+> - 🖼️ **独立壁纸层**（本地图片背景，与主题解耦，可随时关掉回到原版外观）
+> - 🌤 **和风天气（QWeather）服务端 Provider**，支持 **Ed25519 JWT** 动态签发（零新增依赖）
+> - 🔐 凭据只走服务端环境变量 / 只读挂载的密钥文件，**绝不下发浏览器**
+>
+> **文档**
+> - 📘 中文使用说明书：[USER-GUIDE.zh-CN.md](USER-GUIDE.zh-CN.md)
+> - 📝 本分支更新日志：[CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md)
+>
+> **当前发布**：`v2.4.0-zh.2`，基于上游 Flame `v2.4.0`（`3e03c25`）。
+> 官方上游镜像仍是 `pawelmalak/flame`；本分支的镜像是自己构建的 `localhost/flame-zh:v2.4.0-zh.2`（见使用说明书 §11）。
+>
+> 本分支**未修改** `.docker/Dockerfile`、依赖、天气 UI 与数据模型，也**未为 Podman 做 Docker 集成适配**。
+>
+> 以下内容来自上游 README，对本分支同样适用。
+
+---
+
 # Flame
 
 ![Homescreen screenshot](.github/home.png)
