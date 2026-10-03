@@ -671,13 +671,13 @@ describe('fetchWeather() — success mapping (item 22)', () => {
     assert.equal(result.windM, 9.5 * 0.621371);
   });
 
-  it('calls GET https://<host>/weather/v1/current/<lat>/<long> with timeout 8000 and one credential', async () => {
+  it('calls GET https://<host>/v7/weather/now?location=<long>,<lat> with timeout 8000 and one credential', async () => {
     respond(200, { code: '200', now: { temp: '1', icon: '100' } });
 
     await qweather.fetchWeather(CONFIG);
 
     assert.equal(calls.length, 1);
-    assert.equal(calls[0].url, `https://${HOST}/weather/v1/current/39.9/116.4`);
+    assert.equal(calls[0].url, `https://${HOST}/v7/weather/now?location=116.4,39.9`);
     assert.equal(calls[0].options.timeout, 8000);
     assert.deepEqual(calls[0].options.headers, { 'X-QW-Api-Key': API_KEY });
     assert.equal('Authorization' in calls[0].options.headers, false);

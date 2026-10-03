@@ -449,7 +449,15 @@ const fetchWeather = async (config) => {
   }
 
   const { lat, long } = config;
-  const url = `https://${getHost()}/weather/v1/current/${lat}/${long}`;
+  // The same API Host serves two response schemas. The newer
+  // /weather/v1/current/<lat>/<lon> endpoint answers with
+  // {condition,temperature,humidity,…} (no top-level `code`, humidity/cloud as
+  // fractions, wind in m/s), while the parser below — and Flame's icon map and
+  // Weather model — are built around the `/v7/weather/now` schema
+  // {code, updateTime, now:{temp, icon, text, windSpeed, humidity, cloud}}.
+  // Requesting v7 keeps the mapping honest; the v1 shape would silently map to
+  // zeros. Note v7 takes `location=<longitude>,<latitude>`.
+  const url = `https://${getHost()}/v7/weather/now?location=${long},${lat}`;
 
   let res;
 

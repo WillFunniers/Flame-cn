@@ -7,9 +7,58 @@
 
 ---
 
+## v2.4.0-zh.3 — 2026-10-03
+
+tag `v2.4.0-zh.3` · 上一个发布：`v2.4.0-zh.2`（`c27b086`）
+
+### 修复
+
+- **和风天气响应格式不匹配 —— 只有真实 API 才会暴露的缺陷。**
+  `v2.4.0-zh.2` 请求的是 `/weather/v1/current/<lat>/<lon>`，而这个端点返回的是**新版响应格式**
+  （`condition` / `temperature` / `humidity` / `wind`，**没有**顶层 `code`、**没有** `now`，
+  湿度与云量是小数、风速是 m/s）。但解析器、图标映射和 Weather 数据模型全是按
+  **`/v7/weather/now`** 的格式写的（`{code, updateTime, now:{temp, icon, text, windSpeed, humidity, cloud}}`）。
+
+  两者不匹配时**不会报错**：`code` 不存在所以不抛异常，`now` 不存在所以每个字段都取默认值
+  —— 结果是 **天气组件显示 0°C**，而 `GET /api/weather/update` 仍然返回 HTTP 200。
+
+  现在改为请求 `/v7/weather/now?location=<longitude>,<latitude>`（v7 的 `location` 是「经度,纬度」）。
+  解析器、图标映射、数据模型、UI **一个字都没改**。
+
+  **真实凭据验证结果**：使用专属 API Host + 真实 JWT 凭据，
+  `tempC=28, tempF=82.4, conditionText=阴, conditionCode=1009, humidity=83, cloud=99, windK=10`，
+  `externalLastUpdate` 为和风天气真实时间戳，且 `GET /api/weather` 可正确读回。
+
+  > 说明：**JWT 认证在 zh.2 里就是正确的**（真实请求 HTTP 200、token 被接受）。
+  > 缺陷仅在于响应解析。这也正是 zh.2 把「真实 API 验证」标为 NOT TESTED 所掩盖掉的问题。
+
+### 未改变
+
+依赖、Flame 架构、天气 UI、天气数据模型、`package.json` / lockfile、`.docker/Dockerfile`：**零改动**。
+本次只改了 `utils/weather/qweather.js` 的请求 URL（含注释说明为何用 v7）以及对应的一条单测断言。
+
+### 验证记录
+
+| 项 | 结果 |
+|---|---|
+| `node --test`（后端单元测试） | 87/87 |
+| **真实和风天气 API**（专属 Host + JWT） | **PASS** — HTTP 200，天气数据正确写入 SQLite 并可读回 |
+| 认证头检查 | PASS — 仅 `Authorization: Bearer`，无 `X-QW-Api-Key`，共 1 个认证头 |
+| `/api/weather/status` 泄露检查 | PASS — 不返回 Host / Credential ID / JWT / 私钥 |
+| 容器日志泄露检查 | PASS — 无 JWT / API Key / 私钥 / Authorization 头 |
+| Podman 构建（未修改的 Dockerfile） | PASS |
+
+### 已知问题（沿用自 zh.2）
+
+- 应用内版本号仍是 `2.4.0`（`client/.env` 的 `REACT_APP_VERSION`）。这是刻意的：
+  `client/src/utility/checkVersion.ts` 拿它和**上游仓库**比对，改成 `2.4.0-zh.x` 会导致永久误报「有新版本」。
+- 「检查更新」按钮访问的是上游 `pawelmalak/flame`，不是本 fork。
+
+---
+
 ## v2.4.0-zh.2 — 2026-09-30
 
-commit `06c3a5b` · 上一个发布：`v2.4.0-zh.1`（`bc3962d`）
+commit `c27b086` · 上一个发布：`v2.4.0-zh.1`（`bc3962d`）
 
 本次发布的主题是**和风天气（QWeather）的 Ed25519 JWT 动态认证**，以及围绕它的凭据安全加固。
 
