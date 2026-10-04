@@ -1,6 +1,8 @@
-# Flame-cn 使用说明书（v2.4.0-zh.2）
+# Flame-cn 使用说明书（v2.4.0-zh.3）
 
-> 面向第一次使用 Flame 的人。本文按**你当前实际运行的这一版**（Flame-cn **v2.4.0-zh.2**，commit `06c3a5b`：中文 i18n + 上游原生主题 + 独立壁纸 + 和风天气 JWT 认证）编写，界面上的名称都是你在页面上真实看到的文字。
+> 面向第一次使用 Flame 的人。本文按 **Flame-cn `v2.4.0-zh.3`**（中文 i18n + 上游原生主题 + 独立壁纸 + 和风天气 JWT 认证）编写，界面上的名称都是你在页面上真实看到的文字。
+>
+> 安装与部署步骤见仓库首页 [README.md](README.md)；本文主要负责「装好之后怎么用」。
 >
 > 你的访问地址：**http://192.168.x.x:5005/**
 
@@ -77,7 +79,7 @@ podman rm -f flame-zh
 podman run -d --name flame-zh -p 5005:5005 \
   -e PASSWORD='你自己设一个强密码' \
   -v $HOME/flame-runtime-data:/app/data \
-  flame-zh:v2.4.0-zh.2
+  flame-zh:v2.4.0-zh.3
 ```
 
 改完用新密码重新登录即可。**忘了密码**也照这个流程重设。
@@ -379,7 +381,7 @@ podman run -d --name flame-zh -p 5005:5005 \
   --env-file ~/qweather/qweather.env \
   -v ~/qweather/ed25519-private.pem:/run/secrets/qweather_ed25519.pem:ro \
   -v $HOME/flame-runtime-data:/app/data \
-  flame-zh:v2.4.0-zh.2
+  flame-zh:v2.4.0-zh.3
 ```
 
 4. 设置 →「天气」→ **天气服务 = 和风天气** → 保存。状态显示「已配置」即成功。
@@ -548,7 +550,7 @@ podman start flame-zh
 | 项 | 值 |
 |---|---|
 | 容器名 | `flame-zh` |
-| 镜像 | `localhost/flame-zh:v2.4.0-zh.2` |
+| 镜像 | `localhost/flame-zh:v2.4.0-zh.3` |
 | 端口 | `5005`（`0.0.0.0:5005->5005`） |
 | 数据卷 | `$HOME/flame-runtime-data -> /app/data` |
 
@@ -568,10 +570,10 @@ podman images | grep flame         # 看镜像
 
 ```bash
 cd $HOME/Flame
-podman build --network=host -f .docker/Dockerfile -t flame-zh:v2.4.0-zh.2 .
+podman build --network=host -f .docker/Dockerfile -t flame-zh:v2.4.0-zh.3 .
 podman rm -f flame-zh
 podman run -d --name flame-zh -p 5005:5005 -e PASSWORD='你的密码' \
-  -v $HOME/flame-runtime-data:/app/data flame-zh:v2.4.0-zh.2
+  -v $HOME/flame-runtime-data:/app/data flame-zh:v2.4.0-zh.3
 ```
 
 ### 想开机自动启动（可选）
@@ -601,7 +603,7 @@ cat > ~/.config/containers/systemd/flame-zh.container <<'EOF'
 Description=Flame-cn self-hosted start page
 
 [Container]
-Image=localhost/flame-zh:v2.4.0-zh.2
+Image=localhost/flame-zh:v2.4.0-zh.3
 ContainerName=flame-zh
 PublishPort=5005:5005
 Environment=PASSWORD=你的密码
@@ -718,7 +720,7 @@ podman restart flame-zh
 
 ## 附：本版本相对原版 Flame 的差异（速查）
 
-| 项 | 本版（Flame-cn v2.4.0-zh.2） |
+| 项 | 本版（Flame-cn v2.4.0-zh.3） |
 |---|---|
 | 界面语言 | 简体中文 / English 可切换（默认跟随浏览器） |
 | 主题 | **与原版完全一致**：16 套内置主题 + 自定义主题，可随时回原版外观 |
@@ -729,8 +731,8 @@ podman restart flame-zh
 | 密钥安全 | 凭据只走服务端环境变量 + 只读挂载的 PEM，**绝不下发浏览器**；`/api/weather/status` 不返回 Host 与任何凭据；上游错误信息保留 `type/title/detail/invalidParams` 但已脱敏 |
 | 后端 | 原天气流程未重写（Provider 最小改造）；数据格式与上游完全兼容 |
 | Docker 集成 | 保持原样（**未增加 Podman 支持**） |
-| 版本 | `v2.4.0-zh.2`（commit `06c3a5b`，基于上游 Flame `v2.4.0`）；上一个发布 tag 为 `v2.4.0-zh.1`（`bc3962d`） |
+| 版本 | `v2.4.0-zh.3`（tag `v2.4.0-zh.3`，基于上游 Flame `v2.4.0`）；上一个发布 tag 为 `v2.4.0-zh.2` |
 
 ---
 
-*文档对应版本：Flame-cn **v2.4.0-zh.2**（commit `06c3a5b`）· 基于上游 pawelmalak/flame `3e03c25` · 2026-09-30*
+*文档对应版本：Flame-cn **v2.4.0-zh.3** · 基于上游 pawelmalak/flame `v2.4.0`（`3e03c25`）*

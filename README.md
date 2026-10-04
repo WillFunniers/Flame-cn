@@ -1,270 +1,404 @@
-> ## 🇨🇳 Flame-cn（中文二创分支）
+# Flame-cn
+
+> **基于 [pawelmalak/flame](https://github.com/pawelmalak/flame) 的中文增强分支。**
+> An opinionated Chinese fork of Flame: full Simplified-Chinese UI, an independent wallpaper
+> layer, and a server-side **QWeather (和风天气)** provider with **Ed25519 JWT** authentication.
 >
-> 这个仓库是 [pawelmalak/flame](https://github.com/pawelmalak/flame) 的**中文二创分支**。相对上游增加：
+> **当前正式版本：`v2.4.0-zh.3`** · 基于上游 Flame `v2.4.0`（`3e03c25`）
 >
-> - 🈶 **完整中文界面**（简体中文 / English 可切换，默认跟随浏览器语言）
-> - 🖼️ **独立壁纸层**（本地图片背景，与主题解耦，可随时关掉回到原版外观）
-> - 🌤 **和风天气（QWeather）服务端 Provider**，支持 **Ed25519 JWT** 动态签发（零新增依赖）
-> - 🔐 凭据只走服务端环境变量 / 只读挂载的密钥文件，**绝不下发浏览器**
+> | 文档 | 说明 |
+> |---|---|
+> | [CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md) | 本分支更新日志（含升级注意事项） |
+> | [USER-GUIDE.zh-CN.md](USER-GUIDE.zh-CN.md) | 中文使用说明书（面向使用者，逐页讲解界面） |
+> | [Releases](https://github.com/WillFunniers/Flame-cn/releases) | 正式版本与发行说明 |
 >
-> **文档**
-> - 📘 中文使用说明书：[USER-GUIDE.zh-CN.md](USER-GUIDE.zh-CN.md)
-> - 📝 本分支更新日志：[CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md)
->
-> **当前发布**：`v2.4.0-zh.2`，基于上游 Flame `v2.4.0`（`3e03c25`）。
-> 官方上游镜像仍是 `pawelmalak/flame`；本分支的镜像是自己构建的 `localhost/flame-zh:v2.4.0-zh.2`（见使用说明书 §11）。
->
-> 本分支**未修改** `.docker/Dockerfile`、依赖、天气 UI 与数据模型，也**未为 Podman 做 Docker 集成适配**。
->
-> 以下内容来自上游 README，对本分支同样适用。
+> **正式部署请使用 tag 安装**（见 [Quick Start](#quick-start)）。`main` 与 `feature/zh-anime`
+> 是开发分支，内容随时可能变动，不适合作为安装入口。
+
+**TL;DR (Podman, no Docker required):**
+
+```bash
+git clone https://github.com/WillFunniers/Flame-cn.git && cd Flame-cn
+git checkout v2.4.0-zh.3
+export DATA_DIR="$HOME/flame-data" && mkdir -p "$DATA_DIR"
+podman build --network=host -f .docker/Dockerfile -t flame-cn:v2.4.0-zh.3 .
+podman run -d --name flame-cn -p 5005:5005 \
+  -e PASSWORD='<set-a-strong-password>' \
+  -v "$DATA_DIR":/app/data \
+  flame-cn:v2.4.0-zh.3
+# open http://<server-ip>:5005
+```
 
 ---
 
-# Flame
+## Features
 
-![Homescreen screenshot](.github/home.png)
+- 🈶 **完整中文界面** — 简体中文 / English 可切换，默认跟随浏览器语言；覆盖首页、应用、书签、设置全部页签与通知文案。
+- 🖼️ **独立壁纸层** — 用自己的图片做背景，**与主题配色解耦**，任意主题都能搭配；可在设置里随时关掉，回到原版外观。
+- 🌤 **和风天气（QWeather）Provider** — 作为**服务端**天气源，支持 **Ed25519 JWT 动态签发**（token 自动缓存与续签），同时保留 API Key 兼容。
+- 🎨 **上游主题机制保持不变** — 16 套内置主题 + 自定义主题编辑器，与上游行为一致，可随时回原版外观。
+- 🔐 **凭据只在服务端** — API Host / Credential ID / JWT / 私钥永不进入浏览器、响应体或前端 bundle。
+- 🧩 **零新增依赖** — 未新增任何 npm 依赖，未改动 `.docker/Dockerfile`、天气数据模型与天气 UI 结构。
+- 🐳 **Docker 集成保持上游原样** — 本分支**没有**为 Podman 做 Docker 集成适配（详见 [Configuration](#configuration)）。
 
-## Description
+## Requirements
 
-Flame is self-hosted startpage for your server. Its design is inspired (heavily) by [SUI](https://github.com/jeroenpardon/sui). Flame is very easy to setup and use. With built-in editors, it allows you to setup your very own application hub in no time - no file editing necessary.
+| 项 | 要求 |
+|---|---|
+| 操作系统 | 任意 Linux（已在 x86_64 上验证；上游基础镜像 `node:20-alpine` 同时提供 arm64） |
+| 容器运行时 | **Podman**（推荐，无需 Docker）或 Docker / docker-compose |
+| 构建时 | 能访问 npm registry 与 Docker Hub 的网络（拉取 `node:20-alpine` 与 npm 包） |
+| 磁盘 | 镜像约 230 MB + 数据目录（视应用图标/上传的壁纸而定） |
+| 内存 | 256 MB 以上可用内存 |
+| 端口 | 默认 `5005`（可用 `PORT` 环境变量改） |
+| 可选 | 和风天气账号（只有要用 QWeather 天气源时才需要） |
 
-## Functionality
-- 📝 Create, update, delete your applications and bookmarks directly from the app using built-in GUI editors
-- 📌 Pin your favourite items to the homescreen for quick and easy access
-- 🔍 Integrated search bar with local filtering, 11 web search providers and ability to add your own
-- 🔑 Authentication system to protect your settings, apps and bookmarks
-- 🔨 Dozens of options to customize Flame interface to your needs, including support for custom CSS, 15 built-in color themes and custom theme builder
-- ☀️ Weather widget with current temperature, cloud coverage and animated weather status
-- 🐳 Docker integration to automatically pick and add apps based on their labels
+> 构建过程会把前端 `client/` 编译为静态资源放进镜像，**运行时不需要 Node.js**。
 
-## Installation
+## Quick Start
 
-### With Docker (recommended)
+以下步骤在**一台全新的 Linux + Podman 主机**上可直接执行，不依赖任何既有环境。
 
-[Docker Hub link](https://hub.docker.com/r/pawelmalak/flame)
+### 1. 获取源码并锁定版本
 
-```sh
-docker pull pawelmalak/flame
-
-# for ARM architecture (e.g. RaspberryPi)
-docker pull pawelmalak/flame:multiarch
-
-# installing specific version
-docker pull pawelmalak/flame:2.0.0
+```bash
+git clone https://github.com/WillFunniers/Flame-cn.git
+cd Flame-cn
+git checkout v2.4.0-zh.3        # 用 tag 固定版本，不要用 main / feature 分支
 ```
 
-#### Deployment
+### 2. 准备数据目录（持久化，**不要删**）
 
-```sh
-# run container
-docker run -p 5005:5005 -v /path/to/data:/app/data -e PASSWORD=change_me pawelmalak/flame
+```bash
+export DATA_DIR="$HOME/flame-data"
+mkdir -p "$DATA_DIR"
 ```
 
-#### Building images
+> 换成任何你喜欢的路径都可以（例如 `/srv/flame-data`）。这个目录保存配置、数据库、上传的壁纸与主题，**升级时必须保留**。
 
-```sh
-# build image for amd64 only
-docker build -t flame -f .docker/Dockerfile .
+### 3. 构建镜像
 
-# build multiarch image for amd64, armv7 and arm64
-# building failed multiple times with 2GB memory usage limit so you might want to increase it
-docker buildx build \
-  --platform linux/arm/v7,linux/arm64,linux/amd64 \
-  -f .docker/Dockerfile.multiarch \
-  -t flame:multiarch .
+```bash
+podman build --network=host -f .docker/Dockerfile -t flame-cn:v2.4.0-zh.3 .
 ```
 
-#### Docker-Compose
+- `--network=host` 是为了构建阶段能正常拉取 npm 包；如果你的环境不需要可去掉。
+- 构建使用的是**仓库内未修改的** `.docker/Dockerfile`。
+
+### 4. 启动容器
+
+```bash
+podman run -d --name flame-cn -p 5005:5005 \
+  -e PASSWORD='换成你自己的强密码' \
+  -v "$DATA_DIR":/app/data \
+  --restart unless-stopped \
+  flame-cn:v2.4.0-zh.3
+```
+
+### 5. 打开界面
+
+```
+http://<这台主机的IP>:5005
+```
+
+首次进入用你设置的 `PASSWORD` 登录。到这里就已经可以正常使用了 —— QWeather 是**可选**的，不配置也不影响其他任何功能（见 [QWeather](#qweather)）。
+
+### 6. 升级到新版本
+
+见 [Upgrade](#upgrade)。
+
+## Podman
+
+### 常用运维
+
+```bash
+podman ps                          # 查看是否在运行
+podman logs -f flame-cn            # 实时日志
+podman restart flame-cn            # 重启
+podman stop flame-cn               # 停止
+podman start flame-cn              # 启动
+podman rm -f flame-cn              # 删除容器（**不影响 DATA_DIR**）
+podman images | grep flame-cn      # 查看镜像
+```
+
+### 开机自启（Quadlet，Podman 5 推荐）
+
+`podman generate systemd` 已标记 deprecated，推荐用 Quadlet：
+
+```bash
+mkdir -p ~/.config/containers/systemd
+cat > ~/.config/containers/systemd/flame-cn.container <<'EOF'
+[Unit]
+Description=Flame-cn self-hosted start page
+
+[Container]
+Image=flame-cn:v2.4.0-zh.3
+ContainerName=flame-cn
+PublishPort=5005:5005
+Environment=PASSWORD=换成你自己的强密码
+Volume=%h/flame-data:/app/data
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target
+EOF
+
+systemctl --user daemon-reload
+systemctl --user enable --now flame-cn.service
+loginctl enable-linger "$USER"     # 未登录时也能启动
+```
+
+> 注意：Quadlet 会自动创建容器，所以先 `podman rm -f flame-cn` 避免同名冲突。
+
+### Docker / docker-compose
+
+`.docker/Dockerfile` 是标准 Dockerfile，`docker build` 同样可用：
+
+```bash
+docker build -f .docker/Dockerfile -t flame-cn:v2.4.0-zh.3 .
+docker run -d --name flame-cn -p 5005:5005 \
+  -e PASSWORD='换成你自己的强密码' \
+  -v "$DATA_DIR":/app/data \
+  flame-cn:v2.4.0-zh.3
+```
+
+对应的 compose 片段：
 
 ```yaml
-version: '3.6'
-
 services:
-  flame:
-    image: pawelmalak/flame
-    container_name: flame
-    volumes:
-      - /path/to/host/data:/app/data
-      - /var/run/docker.sock:/var/run/docker.sock # optional but required for Docker integration
+  flame-cn:
+    image: flame-cn:v2.4.0-zh.3
+    container_name: flame-cn
     ports:
       - 5005:5005
-    secrets:
-      - password # optional but required for (1)
+    volumes:
+      - ${DATA_DIR}:/app/data
     environment:
-      - PASSWORD=change_me
-      - PASSWORD_FILE=/run/secrets/password # optional but required for (1)
+      - PASSWORD=换成你自己的强密码
     restart: unless-stopped
-
-# optional but required for Docker secrets (1)
-secrets:
-  password:
-    file: /path/to/secrets/password
 ```
 
-##### Docker Secrets
+> 仓库里的 `.docker/docker-compose.yml` 是**上游官方镜像**的示例（`image: pawelmalak/flame`）。本分支请用上面的片段并把 `image` 换成你自己构建的 tag。
 
-All environment variables can be overwritten by appending `_FILE` to the variable value. For example, you can use `PASSWORD_FILE` to pass through a docker secret instead of `PASSWORD`. If both `PASSWORD` and `PASSWORD_FILE` are set, the docker secret will take precedent.
+## QWeather
+
+和风天气是**可选的服务端天气源**。它的凭据**只从服务器环境变量和只读挂载的密钥文件读取**，永远不会下发到浏览器。
+
+> 不配置 QWeather 时，Flame 的默认天气源仍是上游的 WeatherAPI.com（在设置页填 key），或干脆关掉天气组件。**缺少 QWeather 配置不会让容器启动失败。**
+
+### 推荐方式：Ed25519 JWT
+
+**第 1 步 — 生成密钥对（在你自己的机器上）**
 
 ```bash
-# ./secrets/flame_password
-my_custom_secret_password_123
-
-# ./docker-compose.yml
-secrets:
-  password:
-    file: ./secrets/flame_password
+mkdir -p ~/qweather && cd ~/qweather
+openssl genpkey -algorithm ED25519 -out ed25519-private.pem
+openssl pkey -pubout -in ed25519-private.pem > ed25519-public.pem
+chmod 600 ed25519-private.pem
+cat ed25519-public.pem        # 把这段公钥粘贴到和风天气控制台
 ```
 
-#### Skaffold
+**第 2 步 — 在[和风天气控制台](https://console.qweather.com)创建 JWT 凭据**
 
-```sh
-# use skaffold
-skaffold dev
-```
+1. 「项目管理」→ 选择/新建项目 → 「添加凭据」
+2. 身份认证方式选 **JSON Web Token**
+3. 把上一步的**公钥**内容粘贴进去并保存
+4. 记下这个凭据的 **ID**（对应 `QWEATHER_KEY_ID`）
+5. 在「设置」里复制 **API Host**（形如 `abcxyz.xy.qweatherapi.com`）与 **开发者 ID**（Q 开头 10 位）
+6. 在项目页面复制 **项目 ID**
 
-### Without Docker
-
-Follow instructions from wiki: [Installation without Docker](https://github.com/pawelmalak/flame/wiki/Installation-without-docker)
-
-## Development
-
-### Technology
-
-- Backend
-  - Node.js + Express
-  - Sequelize ORM + SQLite
-- Frontend
-  - React
-  - Redux
-  - TypeScript
-- Deployment
-  - Docker
-  - Kubernetes
-
-### Creating dev environment
-
-```sh
-# clone repository
-git clone https://github.com/pawelmalak/flame
-cd flame
-
-# run only once
-npm run dev-init
-
-# start backend and frontend development servers
-npm run dev
-```
-
-## Screenshots
-
-![Apps screenshot](.github/apps.png)
-
-![Bookmarks screenshot](.github/bookmarks.png)
-
-![Settings screenshot](.github/settings.png)
-
-![Themes screenshot](.github/themes.png)
-
-## Usage
-
-### Authentication
-
-Visit [project wiki](https://github.com/pawelmalak/flame/wiki/Authentication) to read more about authentication
-
-### Search bar
-
-#### Searching
-
-The default search setting is to search through all your apps and bookmarks. If you want to search using specific search engine, you need to type your search query with selected prefix. For example, to search for "what is docker" using google search you would type: `/g what is docker`.
-
-For list of supported search engines, shortcuts and more about searching functionality visit [project wiki](https://github.com/pawelmalak/flame/wiki/Search-bar).
-
-### Setting up weather module
-
-1. Obtain API Key from [Weather API](https://www.weatherapi.com/pricing.aspx).
-   > Free plan allows for 1M calls per month. Flame is making less then 3K API calls per month.
-2. Get lat/long for your location. You can get them from [latlong.net](https://www.latlong.net/convert-address-to-lat-long.html).
-3. Enter and save data. Weather widget will now update and should be visible on Home page.
-
-### Docker integration
-
-In order to use the Docker integration, each container must have the following labels:
-
-```yml
-labels:
-  - flame.type=application # "app" works too
-  - flame.name=My container
-  - flame.url=https://example.com
-  - flame.icon=icon-name # optional, default is "docker"
-# - flame.icon=custom to make changes in app. ie: custom icon upload
-```
-
-> "Use Docker API" option must be enabled for this to work. You can find it in Settings > Docker
-
-You can also set up different apps in the same label adding `;` between each one.
-
-```yml
-labels:
-  - flame.type=application
-  - flame.name=First App;Second App
-  - flame.url=https://example1.com;https://example2.com
-  - flame.icon=icon-name1;icon-name2
-```
-
-If you want to use a remote docker host follow this instructions in the host:
-
-- Open the file `/lib/systemd/system/docker.service`, search for `ExecStart` and edit the value
-
-```text
-ExecStart=/usr/bin/dockerd -H tcp://0.0.0.0:${PORT} -H unix:///var/run/docker.sock
-```
-
->The above command will bind the docker engine server to the Unix socket as well as TCP port of your choice. “0.0.0.0” means docker-engine accepts connections from all IP addresses.
-
-- Restart the daemon and Docker service
-
-```shell
-sudo systemctl daemon-reload
-sudo service docker restart
-```
-
-- Test if it is working
-
-```shell
-curl http://${IP}:${PORT}/version
-```
-
-### Kubernetes integration
-
-In order to use the Kubernetes integration, each ingress must have the following annotations:
-
-```yml
-metadata:
-  annotations:
-  - flame.pawelmalak/type=application # "app" works too
-  - flame.pawelmalak/name=My container
-  - flame.pawelmalak/url=https://example.com
-  - flame.pawelmalak/icon=icon-name # optional, default is "kubernetes"
-```
-
-> "Use Kubernetes Ingress API" option must be enabled for this to work. You can find it in Settings > Docker
-
-### Import HTML Bookmarks (Experimental)
-
-- Requirements
-  - python3
-  - pip packages: Pillow, beautifulsoup4
-- Backup your `db.sqlite` before running script!
-- Known Issues:
-  - generated icons are sometimes incorrect
+**第 3 步 — 写一个 env 文件（不要用 `-e` 传凭据）**
 
 ```bash
-pip3 install Pillow, beautifulsoup4
-
-cd flame/.dev
-python3 bookmarks_importer.py --bookmarks <path to bookmarks.html> --data <path to flame data folder>
+cat > ~/qweather/qweather.env <<'EOF'
+QWEATHER_API_HOST=<your-api-host>
+QWEATHER_AUTH_MODE=jwt
+QWEATHER_KEY_ID=<credential-id>
+QWEATHER_DEVELOPER_ID=<developer-id>
+QWEATHER_PROJECT_ID=<project-id>
+QWEATHER_PRIVATE_KEY_PATH=/run/secrets/qweather_ed25519.pem
+EOF
+chmod 600 ~/qweather/qweather.env
 ```
 
-### Custom CSS and themes
+**第 4 步 — 启动容器，把私钥以只读方式挂进去**
 
-See project wiki for [Custom CSS](https://github.com/pawelmalak/flame/wiki/Custom-CSS) and [Custom theme with CSS](https://github.com/pawelmalak/flame/wiki/Custom-theme-with-CSS).
+```bash
+podman rm -f flame-cn
+podman run -d --name flame-cn -p 5005:5005 \
+  -e PASSWORD='换成你自己的强密码' \
+  --env-file ~/qweather/qweather.env \
+  -v ~/qweather/ed25519-private.pem:/run/secrets/qweather_ed25519.pem:ro \
+  -v "$DATA_DIR":/app/data \
+  flame-cn:v2.4.0-zh.3
+```
+
+**第 5 步 — 在界面里选用**
+
+设置 →「天气」→ **天气服务 = 和风天气** → 保存。状态显示「已配置」即成功。
+
+> ⚠️ **`QWEATHER_API_HOST` 必须是控制台给你的专属 Host。** 旧的公共地址
+> `api.qweather.com` / `devapi.qweather.com` / `geoapi.qweather.com` 已被和风天气逐步停用，
+> 本版会**直接拒绝**这些地址（状态显示「未配置」），**不会**静默回落到公共地址。
+
+### 兼容方式：只用 API Key
+
+```
+QWEATHER_API_HOST=<your-api-host>
+QWEATHER_AUTH_MODE=api-key
+QWEATHER_API_KEY=<your-api-key>
+```
+
+### JWT 是怎么签的
+
+Flame 在服务端用 Node 内置 `crypto` 签发 Ed25519 JWT，无需额外依赖：
+
+| 字段 | 值 |
+|---|---|
+| `alg` | `EdDSA` |
+| `kid` | `QWEATHER_KEY_ID` |
+| `iss` | `QWEATHER_DEVELOPER_ID` |
+| `sub` | `QWEATHER_PROJECT_ID` |
+| `iat` | 当前时间 − 30 秒（容忍时钟偏差） |
+| `exp` | `iat` + 900 秒 |
+
+token 带模块级缓存，**剩余有效期少于 60 秒时自动重签**；请求以 `Authorization: Bearer <token>` 发出。`QWEATHER_AUTH_MODE` 显式决定认证方式，JWT 与 API Key **永远不会同时发送**。
+
+### 关于 `/run/secrets`
+
+Flame 沿用了上游的 docker-secret 支持：**挂在 `/run/secrets/` 下的文件会被读入进程环境变量**（用文件名大写作为变量名）。所以把私钥放在 `/run/secrets/` 时，你会看到一条
+`... was overwritten with docker secret value` 的启动日志 —— 这是正常的，日志里**不会**出现密钥内容。若不希望它被读入环境，可把私钥挂到 `/run/secrets` 之外的路径并相应修改 `QWEATHER_PRIVATE_KEY_PATH`。
+
+## Configuration
+
+全部配置通过**环境变量**提供：
+
+| 变量 | 默认值 | 说明 |
+|---|---|---|
+| `PORT` | `5005` | Web 监听端口（容器内） |
+| `PASSWORD` | `flame_password` | 登录密码。**务必修改**；Flame 不在界面上保存或显示它 |
+| `PASSWORD_FILE` | — | 从文件读取密码（配合 docker/podman secret 使用） |
+| `NODE_ENV` | `production`（镜像内置） | 运行模式；`development` 会输出更多日志 |
+| `QWEATHER_API_HOST` | — | 和风天气专属 API Host（不含 `https://`、不含路径） |
+| `QWEATHER_AUTH_MODE` | — | `jwt` 或 `api-key`。**必填**，不设即为「未配置」 |
+| `QWEATHER_KEY_ID` | — | JWT 凭据 ID（`kid`） |
+| `QWEATHER_DEVELOPER_ID` | — | 和风天气开发者 ID（`iss`） |
+| `QWEATHER_PROJECT_ID` | — | 项目 ID（`sub`） |
+| `QWEATHER_PRIVATE_KEY_PATH` | — | 容器内 Ed25519 私钥 PEM 路径 |
+| `QWEATHER_API_KEY` | — | 仅 `api-key` 模式使用 |
+
+**应用内设置**（界面里改，存在数据目录里）：主题与配色、壁纸开关、语言、天气源与经纬度、时区/日期格式、搜索提供方、自定义 CSS 等。详见 [USER-GUIDE.zh-CN.md](USER-GUIDE.zh-CN.md)。
+
+> **Docker 集成**保持上游原样：它走 Docker socket/API。本分支**未做 Podman 适配**，也不默认挂载 `/var/run/docker.sock`，所以这一页不会自动发现容器 —— 这是预期行为。
+
+## Upgrade
+
+**核心原则：镜像可以随时删除重建，`DATA_DIR` 绝对不要删。**
+
+```bash
+# 1) 取新版本源码
+cd Flame-cn
+git fetch --tags
+git checkout v2.4.0-zh.3
+
+# 2) 重新构建镜像（换成新版本号）
+podman build --network=host -f .docker/Dockerfile -t flame-cn:v2.4.0-zh.3 .
+
+# 3) 重建容器：旧的删掉，DATA_DIR 保持不变
+podman rm -f flame-cn
+podman run -d --name flame-cn -p 5005:5005 \
+  -e PASSWORD='你的密码' \
+  --env-file ~/qweather/qweather.env \
+  -v ~/qweather/ed25519-private.pem:/run/secrets/qweather_ed25519.pem:ro \
+  -v "$DATA_DIR":/app/data \
+  --restart unless-stopped \
+  flame-cn:v2.4.0-zh.3
+
+# 4) 可选：清理旧镜像
+podman rmi flame-cn:v2.4.0-zh.2   # 只删镜像，不删数据
+```
+
+> **升级前请先读 [CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md) 的「升级注意」。**
+> 例如 `v2.4.0-zh.2`/`zh.3` 起 `QWEATHER_AUTH_MODE` 变为**必填**：老配置只有 `QWEATHER_API_KEY`
+> 时会显示「未配置」，补上 `QWEATHER_AUTH_MODE=api-key` 即可恢复。这类问题**只影响天气功能**。
+
+数据目录中的数据库由 Flame 自动迁移，正常升级无需手工操作。
+
+## Backup / Data
+
+### 数据目录里有什么
+
+容器内路径 `/app/data`（宿主机即 `DATA_DIR`）：
+
+| 文件 / 目录 | 内容 |
+|---|---|
+| `config.json` | 全部应用设置（主题、天气源、经纬度、界面选项…） |
+| `db.sqlite` | 应用、书签、分类、主题、天气记录（SQLite 数据库） |
+| `uploads/` | 上传的图标与背景图（例如 `wallpaper.png`） |
+| `themes.json` | 主题定义 |
+| `customQueries.json` | 自定义搜索引擎 |
+| `flame.css` | 你在「CSS」页签保存的自定义样式 |
+| `.secret` | 用于签发登录 token 的密钥，**不要泄露，也不要删** |
+| `db_backups/` | 数据库自动备份 |
+
+### 备份
+
+```bash
+# 停一下更稳妥；也可以直接热备份
+podman stop flame-cn
+tar czf "flame-backup-$(date +%F).tar.gz" -C "$(dirname "$DATA_DIR")" "$(basename "$DATA_DIR")"
+podman start flame-cn
+```
+
+### 恢复
+
+把备份解回同一个 `DATA_DIR`，然后按 [Quick Start](#quick-start) 第 4 步重新起容器即可。
+
+> ⚠️ **不要删除 `DATA_DIR`**：所有应用、书签、设置、上传的壁纸都在里面。删容器、删镜像都不影响它；删它就等于恢复出厂设置。
+
+## Security
+
+- **凭据只走服务端。** QWeather 的 API Host、Credential ID、Developer ID、Project ID、API Key、JWT 与私钥**不会**出现在浏览器请求、响应体、前端 bundle 或页面 DOM 中；浏览器的全部流量只到 Flame 自己。
+- **不要用 `-e KEY=value` 传凭据。** 那样凭据会明文出现在 `ps`、`podman inspect` 和 shell 历史里。请用 `--env-file` 加 **只读**挂载（`:ro`）的私钥文件。
+- **私钥永不进入 Git。** 仓库里没有任何 `.pem`、密钥或真实凭据；请把它放在仓库目录之外（例如 `~/qweather/`）。
+- **状态接口不泄露配置。** `GET /api/weather/status` 只返回 `provider` / `configured` / `authMode`，不返回 Host 或任何凭据。
+- **日志不打印凭据。** 上游错误信息会保留 HTTP 状态与 `type`/`title`/`detail`/`invalidParams`，但其中的 Host、密钥、JWT 与 PEM 会被脱敏成 `[redacted-*]`；传输层失败（DNS/超时）的错误对象也会被清理掉请求配置与主机信息。
+- **建议**：不要把 `5005` 端口直接暴露到公网。用 Nginx/Caddy 反向代理并配 HTTPS，必要时再套一层 VPN。Flame 的登录密码是唯一门槛，请使用强密码。
+- **数据目录含 `.secret`**（签发登录 token 用），备份文件请妥善保管。
+
+## Releases
+
+| 版本 | 说明 |
+|---|---|
+| **`v2.4.0-zh.3`** | **当前正式版本。** 修复真实和风天气 API 响应格式不匹配（天气显示 0°C 的问题），已在真实专属 API Host + 真实 JWT 凭据下完成 HTTP 200 验证 |
+| `v2.4.0-zh.2` | 首个引入 Ed25519 JWT 认证与凭据安全加固的候选版本 |
+| `v2.4.0-zh.1` | 中文界面 + 独立壁纸层 + 上游主题机制恢复 |
+
+**安装请始终使用 tag**：
+
+```bash
+git clone https://github.com/WillFunniers/Flame-cn.git
+cd Flame-cn
+git fetch --tags
+git checkout v2.4.0-zh.3
+```
+
+- 最新正式版本与发行说明：<https://github.com/WillFunniers/Flame-cn/releases>
+- 逐版本变更记录：[CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md)
+- `main` 与 `feature/zh-anime` 是开发分支，**不是**安装入口。
+
+## Upstream
+
+- 上游项目：[pawelmalak/flame](https://github.com/pawelmalak/flame)（本项目基于其 `v2.4.0` / `3e03c25`）
+- 官方镜像：`pawelmalak/flame`
+- 本分支目的：在不破坏上游结构的前提下提供中文界面、独立壁纸与和风天气支持。为了让上游同步保持容易，本分支**未修改** `.docker/Dockerfile`、`package.json` 依赖、天气数据模型与天气 UI 结构。
+- 许可证：见 [LICENSE.md](LICENSE.md)（沿用上游）
+- 第三方素材说明：[THIRD-PARTY-ASSETS.md](THIRD-PARTY-ASSETS.md)
+
+## 项目内部文档
+
+以下文件是开发过程的记录，普通使用者**不需要**阅读：
+
+[AUDIT.md](AUDIT.md) · [REVIEW.md](REVIEW.md) · [FINAL-REPORT.md](FINAL-REPORT.md) · [I18N-DESIGN.md](I18N-DESIGN.md) · [I18N-INVENTORY.md](I18N-INVENTORY.md) · [THEME-DESIGN.md](THEME-DESIGN.md)
