@@ -15,47 +15,52 @@
 > **正式部署请使用 tag 安装**（见 [Quick Start](#quick-start)）。`main` 与 `feature/zh-anime`
 > 是开发分支，内容随时可能变动，不适合作为安装入口。
 
-**TL;DR — docker compose（最省事，推荐）：**
+**TL;DR — 面板（Arcane / Portainer / Dockge，**不需要源码、不需要构建**）：**
+
+把 [`compose.yaml`](compose.yaml) 的内容粘进面板的新项目，在面板的环境变量里加一行
+`FLAME_PASSWORD=你的强密码`，然后部署即可。镜像已发布在 `ghcr.io/willfunniers/flame-cn`。
+
+> 面板用户**不要**加 `--env-file` 参数 —— 面板不会传它。把变量填在面板的变量设置里即可
+> （Arcane：Customization → Variables；Portainer/Dockge：stack 的环境变量编辑区）。
+
+**TL;DR — docker compose（命令行）：**
 
 ```bash
 git clone https://github.com/WillFunniers/Flame-cn.git && cd Flame-cn
 git checkout v2.4.0-zh.3
 cp .env.example .env.local          # 编辑它，至少设置 FLAME_PASSWORD
-docker compose --env-file .env.local up -d --build
+docker compose --env-file .env.local up -d
 # open http://<server-ip>:5005
 ```
 
-仓库自带 [`compose.yaml`](compose.yaml) 与 [`.env.example`](.env.example)：数据落在 `./flame-data`，
-QWeather 私钥放进 `secrets/`（该目录与 `.env.local` 都已在 `.gitignore` 中，不会被提交）。
+仓库自带 [`compose.yaml`](compose.yaml) 与 [`.env.example`](.env.example)：默认直接拉取已发布镜像；
+数据落在 `./flame-data`；QWeather 私钥放进 `secrets/`（该目录与 `.env.local` 都已在 `.gitignore` 中）。
 Podman 用户把 `docker` 换成 `podman` 即可。详见 [Docker](#docker) 章节。
 
-**TL;DR — Docker（不用 compose）:**
+**TL;DR — docker run（单条命令，用已发布镜像）：**
 
 ```bash
-git clone https://github.com/WillFunniers/Flame-cn.git && cd Flame-cn
-git checkout v2.4.0-zh.3
 export DATA_DIR="$HOME/flame-data" && mkdir -p "$DATA_DIR"
-docker build -f .docker/Dockerfile -t flame-cn:v2.4.0-zh.3 .
 docker run -d --name flame-cn -p 5005:5005 --restart unless-stopped \
   -e PASSWORD='<set-a-strong-password>' \
   -v "$DATA_DIR":/app/data \
-  flame-cn:v2.4.0-zh.3
+  ghcr.io/willfunniers/flame-cn:v2.4.0-zh.3
 # open http://<server-ip>:5005
 ```
 
-**TL;DR — Podman（无需 Docker）:**
+**TL;DR — Podman:**
 
 ```bash
-git clone https://github.com/WillFunniers/Flame-cn.git && cd Flame-cn
-git checkout v2.4.0-zh.3
 export DATA_DIR="$HOME/flame-data" && mkdir -p "$DATA_DIR"
-podman build --network=host -f .docker/Dockerfile -t flame-cn:v2.4.0-zh.3 .
 podman run -d --name flame-cn -p 5005:5005 \
   -e PASSWORD='<set-a-strong-password>' \
   -v "$DATA_DIR":/app/data \
-  flame-cn:v2.4.0-zh.3
+  ghcr.io/willfunniers/flame-cn:v2.4.0-zh.3
 # open http://<server-ip>:5005
 ```
+
+> **想从源码构建**（改了代码、或想完全离线自建）见 [从源码构建](#从源码构建) 一节；
+> 镜像 `ghcr.io/willfunniers/flame-cn` 由仓库的 GitHub Actions 在每次打 tag 时自动构建发布。
 
 ---
 
@@ -149,11 +154,38 @@ http://<这台主机的IP>:5005
 
 ## Docker
 
-`.docker/Dockerfile` 是**标准 Dockerfile**（本分支未做任何修改），`docker build` 与 `docker compose` 都可直接使用。
+镜像已发布在 **`ghcr.io/willfunniers/flame-cn`**，由仓库的 GitHub Actions 在每次打 tag 时自动构建。
+所以**默认不需要源码、不需要本地构建** —— 下面三种方式任选。
 
-### 用 compose.yaml 一键部署（推荐）
+### 面板部署：Arcane / Portainer / Dockge（最省事）
 
-仓库根目录自带可直接使用的 [`compose.yaml`](compose.yaml)，已经处理好数据卷、密钥只读挂载、重启策略与健康检查：
+这类面板的一个「项目 / Stack」就是**一个含 compose 文件的目录**，它们会直接执行 `docker compose up`：
+
+1. 新建项目 / Stack，把仓库里的 [`compose.yaml`](compose.yaml) 内容整段粘贴进去
+2. 在面板的**环境变量**里加一行（**不要**加 `--env-file` 参数，面板不支持它）：
+   ```
+   FLAME_PASSWORD=你的强密码
+   ```
+3. 部署
+
+面板会自己从 GHCR 拉取镜像，**无需 clone 源码、无需构建**。
+
+| 面板 | 变量填在哪 |
+|---|---|
+| **Arcane** | Customization → **Variables**（会写入 `.env.global`，compose 自动解析）；也可以直接编辑项目目录里的 `.env` |
+| **Portainer** | Stack → Environment variables |
+| **Dockge** | 项目目录里的 `.env` |
+
+> **想要更省事**：Arcane 等面板还有 **Git Sync**（直接从 git 仓库同步项目）。这时你可以把仓库地址、
+> tag `v2.4.0-zh.3` 和 compose 路径 `compose.yaml` 填进去，面板自己 clone —— 但这只在你想让面板
+> 管理源码时才需要；只想跑服务的话，**用上面的镜像方式就够了**。
+>
+> 面板用户建议顺手把 `DATA_DIR` 设成**绝对路径**（如 `/srv/flame-data`），避免面板工作目录不同
+> 导致数据落到意外位置。
+
+### 用 compose.yaml 一键部署（命令行）
+
+仓库根目录自带可直接使用的 [`compose.yaml`](compose.yaml)，已经处理好镜像、数据卷、密钥只读挂载、重启策略与健康检查：
 
 ```bash
 git clone https://github.com/WillFunniers/Flame-cn.git
@@ -161,7 +193,7 @@ cd Flame-cn
 git checkout v2.4.0-zh.3
 
 cp .env.example .env.local        # 编辑 .env.local，至少把 FLAME_PASSWORD 改成强密码
-docker compose --env-file .env.local up -d --build
+docker compose --env-file .env.local up -d
 ```
 
 打开 `http://<服务器IP>:5005` 即可。
@@ -173,7 +205,7 @@ docker compose --env-file .env.local logs -f      # 看日志
 docker compose --env-file .env.local ps           # 看状态（含 healthcheck）
 docker compose --env-file .env.local restart
 docker compose --env-file .env.local down         # 停并删容器；数据目录不受影响
-docker compose --env-file .env.local up -d --build  # 升级/改配置后重建
+docker compose --env-file .env.local up -d        # 改配置 / 换 tag 后重新部署
 ```
 
 `.env.local` 里可配置的项（全部有默认值，详见 [`.env.example`](.env.example)）：
@@ -183,14 +215,16 @@ docker compose --env-file .env.local up -d --build  # 升级/改配置后重建
 | `FLAME_PASSWORD` | `please-change-me` | 登录密码，**务必修改** |
 | `FLAME_PORT` | `5005` | 对外端口 |
 | `DATA_DIR` | `./flame-data` | 数据目录（宿主路径） |
-| `FLAME_VERSION` | `v2.4.0-zh.3` | 本地构建产物的镜像 tag |
+| `FLAME_VERSION` | `v2.4.0-zh.3` | 使用的镜像 tag |
 | `QWEATHER_*` | 空 | 见 [QWeather](#qweather) 章节 |
 
 > - `.env.local`、`secrets/`、`flame-data/` 都已写入 [`.gitignore`](.gitignore)，**不会**被提交。
 > - QWeather 私钥请放进 `secrets/`（`compose.yaml` 已把该目录**只读**挂到容器内的 `/run/secrets`），然后把 `QWEATHER_PRIVATE_KEY_PATH=/run/secrets/ed25519-private.pem` 写进 `.env.local`。
-> - **Podman 用户同样可用这份 compose**：`podman compose --env-file .env.local up -d --build`，或安装 `podman-compose` 后 `podman-compose --env-file .env.local up -d --build`。
+> - **Podman 用户同样可用这份 compose**：`podman compose --env-file .env.local up -d`，或安装 `podman-compose` 后 `podman-compose --env-file .env.local up -d`。
 
-### 构建（不用 compose）
+### 从源码构建
+
+想改了代码自己构建，或者完全离线自建时：
 
 ```bash
 git clone https://github.com/WillFunniers/Flame-cn.git
@@ -200,9 +234,13 @@ git checkout v2.4.0-zh.3
 docker build -f .docker/Dockerfile -t flame-cn:v2.4.0-zh.3 .
 ```
 
-> 只有 Podman 构建时需要额外加 `--network=host`，Docker 不需要。
+用 compose 的话，把 [`compose.yaml`](compose.yaml) 里的 `image:` 换成 `flame-cn:v2.4.0-zh.3`，
+再取消 `build:` 两行的注释，然后 `docker compose up -d --build`。
 
-### 运行
+> 只有 Podman 构建时需要额外加 `--network=host`，Docker 不需要。
+> 构建用的是仓库内**未修改**的 `.docker/Dockerfile`。
+
+### 运行已发布镜像（不用 compose）
 
 ```bash
 export DATA_DIR="$HOME/flame-data"
@@ -212,19 +250,19 @@ docker run -d --name flame-cn -p 5005:5005 \
   --restart unless-stopped \
   -e PASSWORD='换成你自己的强密码' \
   -v "$DATA_DIR":/app/data \
-  flame-cn:v2.4.0-zh.3
+  ghcr.io/willfunniers/flame-cn:v2.4.0-zh.3
 ```
 
-### docker compose（长期运行推荐）
+自己构建了镜像的话，把最后的镜像名换成 `flame-cn:v2.4.0-zh.3` 即可。
 
-直接使用仓库自带的 [`compose.yaml`](compose.yaml) —— 用法见上面的 [用 compose.yaml 一键部署](#用-composeyaml-一键部署推荐)。
-如果你不想用仓库里的文件，也可以自己写一份最小 compose：
+### docker compose（自己写最小 compose）
+
+直接使用仓库自带的 [`compose.yaml`](compose.yaml) 即可；如果你不想用仓库里的文件，也可以自己写一份最小 compose：
 
 ```yaml
 services:
   flame-cn:
-    build: { context: ., dockerfile: .docker/Dockerfile }
-    image: flame-cn:v2.4.0-zh.3
+    image: ghcr.io/willfunniers/flame-cn:v2.4.0-zh.3
     container_name: flame-cn
     restart: unless-stopped
     ports:
@@ -238,7 +276,7 @@ services:
 ```bash
 export DATA_DIR="$HOME/flame-data"
 export FLAME_PASSWORD='换成你自己的强密码'
-docker compose up -d --build
+docker compose up -d
 docker compose logs -f
 docker compose down          # 删除容器；DATA_DIR 不受影响
 ```
@@ -250,7 +288,7 @@ Flame 支持 `PASSWORD_FILE`，也支持读取 `/run/secrets`：
 ```yaml
 services:
   flame-cn:
-    image: flame-cn:v2.4.0-zh.3
+    image: ghcr.io/willfunniers/flame-cn:v2.4.0-zh.3
     container_name: flame-cn
     restart: unless-stopped
     ports:
@@ -288,25 +326,32 @@ docker images | grep flame-cn      # 查看镜像
 
 ### 升级
 
-```bash
-cd Flame-cn
-git fetch --tags && git checkout v2.4.0-zh.3
-docker build -f .docker/Dockerfile -t flame-cn:v2.4.0-zh.3 .
+用已发布镜像时**不需要源码**，换个 tag 重新拉取即可：
 
+```bash
+# compose：把 .env.local / 面板变量里的 FLAME_VERSION 改成新版本，然后
+docker compose --env-file .env.local pull
+docker compose --env-file .env.local up -d
+```
+
+```bash
+# docker run：
+docker pull ghcr.io/willfunniers/flame-cn:v2.4.0-zh.3
 docker rm -f flame-cn
 docker run -d --name flame-cn -p 5005:5005 --restart unless-stopped \
   -e PASSWORD='你的密码' \
   -v "$DATA_DIR":/app/data \
-  flame-cn:v2.4.0-zh.3
+  ghcr.io/willfunniers/flame-cn:v2.4.0-zh.3
 ```
 
-用 compose 的话直接：
+从源码构建的镜像则先更新源码再重新构建：
 
 ```bash
-git fetch --tags && git checkout v2.4.0-zh.3
-docker compose up -d --build
+cd Flame-cn && git fetch --tags && git checkout v2.4.0-zh.3
+docker build -f .docker/Dockerfile -t flame-cn:v2.4.0-zh.3 .
 ```
 
+> **`DATA_DIR` 始终不变** —— 升级只换镜像与容器。数据库迁移由 Flame 启动时自动完成。
 > 仓库里的 `.docker/docker-compose.yml` 是**上游官方镜像**的示例（`image: pawelmalak/flame`），请勿直接用于本分支 —— 用上面给出的 compose 内容。
 
 ### Docker 集成（自动发现容器）
@@ -504,42 +549,45 @@ Flame 沿用了上游的 docker-secret 支持：**挂在 `/run/secrets/` 下的�
 
 **核心原则：镜像可以随时删除重建，`DATA_DIR` 绝对不要删。**
 
-第一步对两种运行时都一样：
+### 用已发布镜像（不需要源码）
+
+```bash
+# 1) 把版本号改成目标 tag：compose 用户改 .env.local / 面板变量里的 FLAME_VERSION
+# 2) 拉取新镜像并重建容器
+docker compose --env-file .env.local pull
+docker compose --env-file .env.local up -d
+```
+
+`docker run` 用户：
+
+```bash
+docker pull ghcr.io/willfunniers/flame-cn:v2.4.0-zh.3
+docker rm -f flame-cn
+docker run -d --name flame-cn -p 5005:5005 --restart unless-stopped \
+  -e PASSWORD='你的密码' \
+  -v "$DATA_DIR":/app/data \
+  ghcr.io/willfunniers/flame-cn:v2.4.0-zh.3
+```
+
+### 从源码构建（需要源码）
 
 ```bash
 cd Flame-cn
 git fetch --tags
 git checkout v2.4.0-zh.3        # 换成目标版本
-```
 
-**Docker：**
-
-```bash
+# Docker
 docker build -f .docker/Dockerfile -t flame-cn:v2.4.0-zh.3 .
+# Podman（--network=host 才能拉 npm 包）
+podman build --network=host -f .docker/Dockerfile -t flame-cn:v2.4.0-zh.3 .
 
+# 然后用新镜像重建容器（compose 用户：docker compose up -d --build）
 docker rm -f flame-cn
 docker run -d --name flame-cn -p 5005:5005 --restart unless-stopped \
   -e PASSWORD='你的密码' \
   --env-file ~/qweather/qweather.env \
   -v ~/qweather/ed25519-private.pem:/run/secrets/qweather_ed25519.pem:ro \
   -v "$DATA_DIR":/app/data \
-  flame-cn:v2.4.0-zh.3
-```
-
-用 compose 的话：`docker compose up -d --build`
-
-**Podman：**
-
-```bash
-podman build --network=host -f .docker/Dockerfile -t flame-cn:v2.4.0-zh.3 .
-
-podman rm -f flame-cn
-podman run -d --name flame-cn -p 5005:5005 \
-  -e PASSWORD='你的密码' \
-  --env-file ~/qweather/qweather.env \
-  -v ~/qweather/ed25519-private.pem:/run/secrets/qweather_ed25519.pem:ro \
-  -v "$DATA_DIR":/app/data \
-  --restart unless-stopped \
   flame-cn:v2.4.0-zh.3
 ```
 
@@ -606,7 +654,20 @@ docker start flame-cn           # Podman 用户换成：podman start flame-cn
 | `v2.4.0-zh.2` | 首个引入 Ed25519 JWT 认证与凭据安全加固的候选版本 |
 | `v2.4.0-zh.1` | 中文界面 + 独立壁纸层 + 上游主题机制恢复 |
 
-**安装请始终使用 tag**：
+### 容器镜像
+
+每次打 tag，GitHub Actions 会自动构建并发布镜像到 GitHub Container Registry：
+
+| 镜像 tag | 对应 |
+|---|---|
+| `ghcr.io/willfunniers/flame-cn:v2.4.0-zh.3` | 当前正式版本（**推荐用这个**） |
+| `ghcr.io/willfunniers/flame-cn:latest` | 跟随最新的 `v*` tag |
+
+```bash
+docker pull ghcr.io/willfunniers/flame-cn:v2.4.0-zh.3
+```
+
+**从源码安装请始终使用 tag**（`main` 与 `feature/zh-anime` 是开发分支，**不是**安装入口）：
 
 ```bash
 git clone https://github.com/WillFunniers/Flame-cn.git
@@ -616,15 +677,16 @@ git checkout v2.4.0-zh.3
 ```
 
 - 最新正式版本与发行说明：<https://github.com/WillFunniers/Flame-cn/releases>
+- 镜像列表：<https://github.com/WillFunniers/Flame-cn/pkgs/container/flame-cn>
 - 逐版本变更记录：[CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md)
-- `main` 与 `feature/zh-anime` 是开发分支，**不是**安装入口。
 
 ## Upstream
 
 - 上游项目：[pawelmalak/flame](https://github.com/pawelmalak/flame)（本项目基于其 `v2.4.0` / `3e03c25`）
-- 官方镜像：`pawelmalak/flame`
+- 上游官方镜像：`pawelmalak/flame`（原版，**不含**中文界面与 QWeather）
+- 本分支镜像：`ghcr.io/willfunniers/flame-cn`
 - 本分支目的：在不破坏上游结构的前提下提供中文界面、独立壁纸与和风天气支持。为了让上游同步保持容易，本分支**未修改** `.docker/Dockerfile`、`package.json` 依赖、天气数据模型与天气 UI 结构。
-- 许可证：见 [LICENSE.md](LICENSE.md)（沿用上游）
+- 许可证：见 [LICENSE.md](LICENSE.md)（MIT，沿用上游）
 - 第三方素材说明：[THIRD-PARTY-ASSETS.md](THIRD-PARTY-ASSETS.md)
 
 ## 项目内部文档
