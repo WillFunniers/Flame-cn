@@ -161,14 +161,43 @@ http://<这台主机的IP>:5005
 
 这类面板的一个「项目 / Stack」就是**一个含 compose 文件的目录**，它们会直接执行 `docker compose up`：
 
-1. 新建项目 / Stack，把仓库里的 [`compose.yaml`](compose.yaml) 内容整段粘贴进去
-2. 在面板的**环境变量**里加一行（**不要**加 `--env-file` 参数，面板不支持它）：
-   ```
-   FLAME_PASSWORD=你的强密码
-   ```
+1. 新建项目 / Stack，把下面的 compose 粘进去（**推荐用这份全字面值的版本**，见下方说明）
+2. 在面板的**环境变量**里加 `FLAME_PASSWORD=你的强密码`（**不要**加 `--env-file` 参数，面板不支持它）
 3. 部署
 
 面板会自己从 GHCR 拉取镜像，**无需 clone 源码、无需构建**。
+
+**可以直接粘贴的版本**（把路径和密码换成你自己的）：
+
+```yaml
+services:
+  flame-cn:
+    image: ghcr.io/willfunniers/flame-cn:v2.4.0-zh.3
+    container_name: flame-cn
+    restart: unless-stopped
+    ports:
+      - "5005:5005"
+    volumes:
+      - /srv/flame-data:/app/data          # 数据目录（绝对路径，不要删）
+      - /srv/flame-secrets:/run/secrets:ro # QWeather 私钥目录（不用 QWeather 可删掉这行）
+    environment:
+      - PASSWORD=换成你的强密码
+      # 以下 6 行只在用和风天气时需要
+      - QWEATHER_API_HOST=你的专属APIHost
+      - QWEATHER_AUTH_MODE=jwt
+      - QWEATHER_KEY_ID=凭据ID
+      - QWEATHER_DEVELOPER_ID=开发者ID
+      - QWEATHER_PROJECT_ID=项目ID
+      - QWEATHER_PRIVATE_KEY_PATH=/run/secrets/ed25519-private.pem
+```
+
+> ⚠️ **为什么这里用字面值而不是仓库里的 `compose.yaml`？**
+> 仓库的 [`compose.yaml`](compose.yaml) 用了 `${VAR:-默认值}` 这种 Compose 变量语法，方便命令行用户。
+> **部分面板（如 Arcane）不对 `image:` 字段做变量插值**，会把 `${...}` 原样当成 tag，报
+> `invalid reference format`。上面这份把值写死，任何面板都能直接用。
+>
+> 想用变量（面板的 Variables / `.env` 生效）也可以用仓库的 `compose.yaml`，但**务必确认面板支持
+> `${VAR:-默认值}` 语法**；不确定就用上面这份。
 
 | 面板 | 变量填在哪 |
 |---|---|
@@ -176,12 +205,14 @@ http://<这台主机的IP>:5005
 | **Portainer** | Stack → Environment variables |
 | **Dockge** | 项目目录里的 `.env` |
 
+> **关于「版本」**：镜像地址后面的 `v2.4.0-zh.3` 就是版本 tag，也可以写 `latest`（跟随最新正式版）。
+> 可用 tag 见 [Releases](#releases)。**换版本 = 改这一行**，别写 `${...}`。
+>
 > **想要更省事**：Arcane 等面板还有 **Git Sync**（直接从 git 仓库同步项目）。这时你可以把仓库地址、
 > tag `v2.4.0-zh.3` 和 compose 路径 `compose.yaml` 填进去，面板自己 clone —— 但这只在你想让面板
 > 管理源码时才需要；只想跑服务的话，**用上面的镜像方式就够了**。
 >
-> 面板用户建议顺手把 `DATA_DIR` 设成**绝对路径**（如 `/srv/flame-data`），避免面板工作目录不同
-> 导致数据落到意外位置。
+> 面板用户请把数据目录设成**绝对路径**（如 `/srv/flame-data`），避免面板工作目录不同导致数据落到意外位置。
 
 ### 用 compose.yaml 一键部署（命令行）
 
@@ -215,8 +246,12 @@ docker compose --env-file .env.local up -d        # 改配置 / 换 tag 后重�
 | `FLAME_PASSWORD` | `please-change-me` | 登录密码，**务必修改** |
 | `FLAME_PORT` | `5005` | 对外端口 |
 | `DATA_DIR` | `./flame-data` | 数据目录（宿主路径） |
-| `FLAME_VERSION` | `v2.4.0-zh.3` | 使用的镜像 tag |
+| `QWEATHER_SECRETS_DIR` | `./secrets` | 私钥目录（只读挂到容器 `/run/secrets`） |
 | `QWEATHER_*` | 空 | 见 [QWeather](#qweather) 章节 |
+
+> **镜像版本不是变量** —— 它写在 `compose.yaml` 的 `image:` 那一行（字面 tag），换版本直接改那一行。
+> 之所以不写成 `${FLAME_VERSION}`，是因为部分面板（如 Arcane）不对 `image:` 做变量插值，
+> 会报 `invalid reference format`。
 
 > - `.env.local`、`secrets/`、`flame-data/` 都已写入 [`.gitignore`](.gitignore)，**不会**被提交。
 > - QWeather 私钥请放进 `secrets/`（`compose.yaml` 已把该目录**只读**挂到容器内的 `/run/secrets`），然后把 `QWEATHER_PRIVATE_KEY_PATH=/run/secrets/ed25519-private.pem` 写进 `.env.local`。
@@ -329,7 +364,7 @@ docker images | grep flame-cn      # 查看镜像
 用已发布镜像时**不需要源码**，换个 tag 重新拉取即可：
 
 ```bash
-# compose：把 .env.local / 面板变量里的 FLAME_VERSION 改成新版本，然后
+# compose：把 compose.yaml 里 image: 那一行的 tag 改成新版本，然后
 docker compose --env-file .env.local pull
 docker compose --env-file .env.local up -d
 ```
@@ -613,7 +648,7 @@ Flame 沿用了上游的 docker-secret 支持：**挂在 `/run/secrets/` 下的�
 ### 用已发布镜像（不需要源码）
 
 ```bash
-# 1) 把版本号改成目标 tag：compose 用户改 .env.local / 面板变量里的 FLAME_VERSION
+# 1) 把 compose.yaml 里 image: 那一行的 tag 改成目标版本（面板用户在面板里编辑这段 compose）
 # 2) 拉取新镜像并重建容器
 docker compose --env-file .env.local pull
 docker compose --env-file .env.local up -d

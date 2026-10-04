@@ -27,8 +27,11 @@
 
 services:
   flame-cn:
-    # 方式一：使用已发布的镜像（推荐，面板只需这一段）
-    image: ghcr.io/willfunniers/flame-cn:${FLAME_VERSION:-v2.4.0-zh.3}
+    # 已发布的镜像。**这里故意写成字面 tag，不用 ${FLAME_VERSION}**：
+    # 部分面板（如 Arcane）不对 image 字段做变量插值，会把 `${...}` 原样当成 tag，
+    # 报 "invalid reference format"。换版本请直接改这一行。
+    # 可用 tag：v2.4.0-zh.3（推荐，锁版本）、latest（跟随最新正式版）
+    image: ghcr.io/willfunniers/flame-cn:v2.4.0-zh.3
 
     # 方式二：从源码构建（取消注释，并把上面 image 换成你想用的名字）
     #build:
