@@ -15,7 +15,21 @@
 > **正式部署请使用 tag 安装**（见 [Quick Start](#quick-start)）。`main` 与 `feature/zh-anime`
 > 是开发分支，内容随时可能变动，不适合作为安装入口。
 
-**TL;DR (Podman, no Docker required):**
+**TL;DR — Docker:**
+
+```bash
+git clone https://github.com/WillFunniers/Flame-cn.git && cd Flame-cn
+git checkout v2.4.0-zh.3
+export DATA_DIR="$HOME/flame-data" && mkdir -p "$DATA_DIR"
+docker build -f .docker/Dockerfile -t flame-cn:v2.4.0-zh.3 .
+docker run -d --name flame-cn -p 5005:5005 --restart unless-stopped \
+  -e PASSWORD='<set-a-strong-password>' \
+  -v "$DATA_DIR":/app/data \
+  flame-cn:v2.4.0-zh.3
+# open http://<server-ip>:5005
+```
+
+**TL;DR — Podman（无需 Docker）:**
 
 ```bash
 git clone https://github.com/WillFunniers/Flame-cn.git && cd Flame-cn
@@ -46,7 +60,7 @@ podman run -d --name flame-cn -p 5005:5005 \
 | 项 | 要求 |
 |---|---|
 | 操作系统 | 任意 Linux（已在 x86_64 上验证；上游基础镜像 `node:20-alpine` 同时提供 arm64） |
-| 容器运行时 | **Podman**（推荐，无需 Docker）或 Docker / docker-compose |
+| 容器运行时 | **Docker** 或 **Podman** 二者之一（都支持；两条路径见 [Docker](#docker) / [Podman](#podman)） |
 | 构建时 | 能访问 npm registry 与 Docker Hub 的网络（拉取 `node:20-alpine` 与 npm 包） |
 | 磁盘 | 镜像约 230 MB + 数据目录（视应用图标/上传的壁纸而定） |
 | 内存 | 256 MB 以上可用内存 |
@@ -57,7 +71,8 @@ podman run -d --name flame-cn -p 5005:5005 \
 
 ## Quick Start
 
-以下步骤在**一台全新的 Linux + Podman 主机**上可直接执行，不依赖任何既有环境。
+以下步骤在**一台全新的 Linux 主机**上可直接执行，不依赖任何既有环境。
+Docker 与 Podman **任选其一**：完整命令见 [Docker](#docker) 与 [Podman](#podman)，两者的差别只有运行时命令本身与 Podman 构建时多加的 `--network=host`。
 
 ### 1. 获取源码并锁定版本
 
@@ -79,15 +94,26 @@ mkdir -p "$DATA_DIR"
 ### 3. 构建镜像
 
 ```bash
+# Docker
+docker build -f .docker/Dockerfile -t flame-cn:v2.4.0-zh.3 .
+
+# Podman（需要 --network=host 才能正常拉 npm 包）
 podman build --network=host -f .docker/Dockerfile -t flame-cn:v2.4.0-zh.3 .
 ```
 
-- `--network=host` 是为了构建阶段能正常拉取 npm 包；如果你的环境不需要可去掉。
 - 构建使用的是**仓库内未修改的** `.docker/Dockerfile`。
+- `--network=host` 只有 Podman 需要；Docker 直接构建即可。
 
 ### 4. 启动容器
 
 ```bash
+# Docker
+docker run -d --name flame-cn -p 5005:5005 --restart unless-stopped \
+  -e PASSWORD='换成你自己的强密码' \
+  -v "$DATA_DIR":/app/data \
+  flame-cn:v2.4.0-zh.3
+
+# Podman
 podman run -d --name flame-cn -p 5005:5005 \
   -e PASSWORD='换成你自己的强密码' \
   -v "$DATA_DIR":/app/data \
@@ -106,6 +132,138 @@ http://<这台主机的IP>:5005
 ### 6. 升级到新版本
 
 见 [Upgrade](#upgrade)。
+
+## Docker
+
+`.docker/Dockerfile` 是**标准 Dockerfile**（本分支未做任何修改），`docker build` 与 `docker compose` 都可直接使用。
+
+### 构建
+
+```bash
+git clone https://github.com/WillFunniers/Flame-cn.git
+cd Flame-cn
+git checkout v2.4.0-zh.3
+
+docker build -f .docker/Dockerfile -t flame-cn:v2.4.0-zh.3 .
+```
+
+> 只有 Podman 构建时需要额外加 `--network=host`，Docker 不需要。
+
+### 运行
+
+```bash
+export DATA_DIR="$HOME/flame-data"
+mkdir -p "$DATA_DIR"
+
+docker run -d --name flame-cn -p 5005:5005 \
+  --restart unless-stopped \
+  -e PASSWORD='换成你自己的强密码' \
+  -v "$DATA_DIR":/app/data \
+  flame-cn:v2.4.0-zh.3
+```
+
+### docker compose（长期运行推荐）
+
+在任意目录新建 `compose.yaml`：
+
+```yaml
+services:
+  flame-cn:
+    image: flame-cn:v2.4.0-zh.3
+    container_name: flame-cn
+    restart: unless-stopped
+    ports:
+      - "5005:5005"
+    volumes:
+      - ${DATA_DIR:-./flame-data}:/app/data
+    environment:
+      - PASSWORD=${FLAME_PASSWORD:?请先设置 FLAME_PASSWORD}
+```
+
+```bash
+export DATA_DIR="$HOME/flame-data"
+export FLAME_PASSWORD='换成你自己的强密码'
+docker compose up -d
+docker compose logs -f
+docker compose down          # 删除容器；DATA_DIR 不受影响
+```
+
+### 用 Docker secret 提供密码（可选）
+
+Flame 支持 `PASSWORD_FILE`，也支持读取 `/run/secrets`：
+
+```yaml
+services:
+  flame-cn:
+    image: flame-cn:v2.4.0-zh.3
+    container_name: flame-cn
+    restart: unless-stopped
+    ports:
+      - "5005:5005"
+    volumes:
+      - ${DATA_DIR:-./flame-data}:/app/data
+    environment:
+      - PASSWORD_FILE=/run/secrets/flame_password
+    secrets:
+      - flame_password
+
+secrets:
+  flame_password:
+    file: ./flame_password.txt      # 文件里只放一行密码
+```
+
+```bash
+printf '%s' '你的强密码' > ./flame_password.txt && chmod 600 ./flame_password.txt
+docker compose up -d
+```
+
+> QWeather 的私钥同样建议用 secret / 只读挂载提供（见 [QWeather](#qweather)），**不要**写进 `environment`。
+
+### 常用运维
+
+```bash
+docker ps                          # 查看是否在运行
+docker logs -f flame-cn            # 实时日志
+docker restart flame-cn            # 重启
+docker stop flame-cn               # 停止
+docker start flame-cn              # 启动
+docker rm -f flame-cn              # 删除容器（**不影响 DATA_DIR**）
+docker images | grep flame-cn      # 查看镜像
+```
+
+### 升级
+
+```bash
+cd Flame-cn
+git fetch --tags && git checkout v2.4.0-zh.3
+docker build -f .docker/Dockerfile -t flame-cn:v2.4.0-zh.3 .
+
+docker rm -f flame-cn
+docker run -d --name flame-cn -p 5005:5005 --restart unless-stopped \
+  -e PASSWORD='你的密码' \
+  -v "$DATA_DIR":/app/data \
+  flame-cn:v2.4.0-zh.3
+```
+
+用 compose 的话直接：
+
+```bash
+git fetch --tags && git checkout v2.4.0-zh.3
+docker compose up -d --build
+```
+
+> 仓库里的 `.docker/docker-compose.yml` 是**上游官方镜像**的示例（`image: pawelmalak/flame`），请勿直接用于本分支 —— 用上面给出的 compose 内容。
+
+### Docker 集成（自动发现容器）
+
+Flame 的「Docker」页签通过 Docker socket 自动发现正在运行的容器。**默认没有挂载**，需要时自行加：
+
+```yaml
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+```
+
+> ⚠️ 挂载 Docker socket 相当于把宿主机 Docker 的控制权交给这个容器，请自行评估风险。本分支**未修改**这部分上游逻辑；在 Podman 环境下该功能不工作，这是预期行为。
 
 ## Podman
 
@@ -152,36 +310,6 @@ loginctl enable-linger "$USER"     # 未登录时也能启动
 
 > 注意：Quadlet 会自动创建容器，所以先 `podman rm -f flame-cn` 避免同名冲突。
 
-### Docker / docker-compose
-
-`.docker/Dockerfile` 是标准 Dockerfile，`docker build` 同样可用：
-
-```bash
-docker build -f .docker/Dockerfile -t flame-cn:v2.4.0-zh.3 .
-docker run -d --name flame-cn -p 5005:5005 \
-  -e PASSWORD='换成你自己的强密码' \
-  -v "$DATA_DIR":/app/data \
-  flame-cn:v2.4.0-zh.3
-```
-
-对应的 compose 片段：
-
-```yaml
-services:
-  flame-cn:
-    image: flame-cn:v2.4.0-zh.3
-    container_name: flame-cn
-    ports:
-      - 5005:5005
-    volumes:
-      - ${DATA_DIR}:/app/data
-    environment:
-      - PASSWORD=换成你自己的强密码
-    restart: unless-stopped
-```
-
-> 仓库里的 `.docker/docker-compose.yml` 是**上游官方镜像**的示例（`image: pawelmalak/flame`）。本分支请用上面的片段并把 `image` 换成你自己构建的 tag。
-
 ## QWeather
 
 和风天气是**可选的服务端天气源**。它的凭据**只从服务器环境变量和只读挂载的密钥文件读取**，永远不会下发到浏览器。
@@ -226,6 +354,16 @@ chmod 600 ~/qweather/qweather.env
 **第 4 步 — 启动容器，把私钥以只读方式挂进去**
 
 ```bash
+# Docker
+docker rm -f flame-cn
+docker run -d --name flame-cn -p 5005:5005 --restart unless-stopped \
+  -e PASSWORD='换成你自己的强密码' \
+  --env-file ~/qweather/qweather.env \
+  -v ~/qweather/ed25519-private.pem:/run/secrets/qweather_ed25519.pem:ro \
+  -v "$DATA_DIR":/app/data \
+  flame-cn:v2.4.0-zh.3
+
+# Podman
 podman rm -f flame-cn
 podman run -d --name flame-cn -p 5005:5005 \
   -e PASSWORD='换成你自己的强密码' \
@@ -297,16 +435,35 @@ Flame 沿用了上游的 docker-secret 支持：**挂在 `/run/secrets/` 下的�
 
 **核心原则：镜像可以随时删除重建，`DATA_DIR` 绝对不要删。**
 
+第一步对两种运行时都一样：
+
 ```bash
-# 1) 取新版本源码
 cd Flame-cn
 git fetch --tags
-git checkout v2.4.0-zh.3
+git checkout v2.4.0-zh.3        # 换成目标版本
+```
 
-# 2) 重新构建镜像（换成新版本号）
+**Docker：**
+
+```bash
+docker build -f .docker/Dockerfile -t flame-cn:v2.4.0-zh.3 .
+
+docker rm -f flame-cn
+docker run -d --name flame-cn -p 5005:5005 --restart unless-stopped \
+  -e PASSWORD='你的密码' \
+  --env-file ~/qweather/qweather.env \
+  -v ~/qweather/ed25519-private.pem:/run/secrets/qweather_ed25519.pem:ro \
+  -v "$DATA_DIR":/app/data \
+  flame-cn:v2.4.0-zh.3
+```
+
+用 compose 的话：`docker compose up -d --build`
+
+**Podman：**
+
+```bash
 podman build --network=host -f .docker/Dockerfile -t flame-cn:v2.4.0-zh.3 .
 
-# 3) 重建容器：旧的删掉，DATA_DIR 保持不变
 podman rm -f flame-cn
 podman run -d --name flame-cn -p 5005:5005 \
   -e PASSWORD='你的密码' \
@@ -315,9 +472,13 @@ podman run -d --name flame-cn -p 5005:5005 \
   -v "$DATA_DIR":/app/data \
   --restart unless-stopped \
   flame-cn:v2.4.0-zh.3
+```
 
-# 4) 可选：清理旧镜像
-podman rmi flame-cn:v2.4.0-zh.2   # 只删镜像，不删数据
+**清理旧镜像（可选，只删镜像不删数据）：**
+
+```bash
+docker rmi flame-cn:v2.4.0-zh.2      # Docker
+podman rmi flame-cn:v2.4.0-zh.2      # Podman
 ```
 
 > **升级前请先读 [CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md) 的「升级注意」。**
@@ -347,9 +508,9 @@ podman rmi flame-cn:v2.4.0-zh.2   # 只删镜像，不删数据
 
 ```bash
 # 停一下更稳妥；也可以直接热备份
-podman stop flame-cn
+docker stop flame-cn            # Podman 用户换成：podman stop flame-cn
 tar czf "flame-backup-$(date +%F).tar.gz" -C "$(dirname "$DATA_DIR")" "$(basename "$DATA_DIR")"
-podman start flame-cn
+docker start flame-cn           # Podman 用户换成：podman start flame-cn
 ```
 
 ### 恢复
@@ -361,7 +522,7 @@ podman start flame-cn
 ## Security
 
 - **凭据只走服务端。** QWeather 的 API Host、Credential ID、Developer ID、Project ID、API Key、JWT 与私钥**不会**出现在浏览器请求、响应体、前端 bundle 或页面 DOM 中；浏览器的全部流量只到 Flame 自己。
-- **不要用 `-e KEY=value` 传凭据。** 那样凭据会明文出现在 `ps`、`podman inspect` 和 shell 历史里。请用 `--env-file` 加 **只读**挂载（`:ro`）的私钥文件。
+- **不要用 `-e KEY=value` 传凭据。** 那样凭据会明文出现在 `ps`、`docker inspect` / `podman inspect` 和 shell 历史里。请用 `--env-file` 加 **只读**挂载（`:ro`）的私钥文件。
 - **私钥永不进入 Git。** 仓库里没有任何 `.pem`、密钥或真实凭据；请把它放在仓库目录之外（例如 `~/qweather/`）。
 - **状态接口不泄露配置。** `GET /api/weather/status` 只返回 `provider` / `configured` / `authMode`，不返回 Host 或任何凭据。
 - **日志不打印凭据。** 上游错误信息会保留 HTTP 状态与 `type`/`title`/`detail`/`invalidParams`，但其中的 Host、密钥、JWT 与 PEM 会被脱敏成 `[redacted-*]`；传输层失败（DNS/超时）的错误对象也会被清理掉请求配置与主机信息。
