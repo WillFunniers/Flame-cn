@@ -15,7 +15,21 @@
 > **正式部署请使用 tag 安装**（见 [Quick Start](#quick-start)）。`main` 与 `feature/zh-anime`
 > 是开发分支，内容随时可能变动，不适合作为安装入口。
 
-**TL;DR — Docker:**
+**TL;DR — docker compose（最省事，推荐）：**
+
+```bash
+git clone https://github.com/WillFunniers/Flame-cn.git && cd Flame-cn
+git checkout v2.4.0-zh.3
+cp .env.example .env.local          # 编辑它，至少设置 FLAME_PASSWORD
+docker compose --env-file .env.local up -d --build
+# open http://<server-ip>:5005
+```
+
+仓库自带 [`compose.yaml`](compose.yaml) 与 [`.env.example`](.env.example)：数据落在 `./flame-data`，
+QWeather 私钥放进 `secrets/`（该目录与 `.env.local` 都已在 `.gitignore` 中，不会被提交）。
+Podman 用户把 `docker` 换成 `podman` 即可。详见 [Docker](#docker) 章节。
+
+**TL;DR — Docker（不用 compose）:**
 
 ```bash
 git clone https://github.com/WillFunniers/Flame-cn.git && cd Flame-cn
@@ -137,7 +151,46 @@ http://<这台主机的IP>:5005
 
 `.docker/Dockerfile` 是**标准 Dockerfile**（本分支未做任何修改），`docker build` 与 `docker compose` 都可直接使用。
 
-### 构建
+### 用 compose.yaml 一键部署（推荐）
+
+仓库根目录自带可直接使用的 [`compose.yaml`](compose.yaml)，已经处理好数据卷、密钥只读挂载、重启策略与健康检查：
+
+```bash
+git clone https://github.com/WillFunniers/Flame-cn.git
+cd Flame-cn
+git checkout v2.4.0-zh.3
+
+cp .env.example .env.local        # 编辑 .env.local，至少把 FLAME_PASSWORD 改成强密码
+docker compose --env-file .env.local up -d --build
+```
+
+打开 `http://<服务器IP>:5005` 即可。
+
+常用操作：
+
+```bash
+docker compose --env-file .env.local logs -f      # 看日志
+docker compose --env-file .env.local ps           # 看状态（含 healthcheck）
+docker compose --env-file .env.local restart
+docker compose --env-file .env.local down         # 停并删容器；数据目录不受影响
+docker compose --env-file .env.local up -d --build  # 升级/改配置后重建
+```
+
+`.env.local` 里可配置的项（全部有默认值，详见 [`.env.example`](.env.example)）：
+
+| 变量 | 默认值 | 说明 |
+|---|---|---|
+| `FLAME_PASSWORD` | `please-change-me` | 登录密码，**务必修改** |
+| `FLAME_PORT` | `5005` | 对外端口 |
+| `DATA_DIR` | `./flame-data` | 数据目录（宿主路径） |
+| `FLAME_VERSION` | `v2.4.0-zh.3` | 本地构建产物的镜像 tag |
+| `QWEATHER_*` | 空 | 见 [QWeather](#qweather) 章节 |
+
+> - `.env.local`、`secrets/`、`flame-data/` 都已写入 [`.gitignore`](.gitignore)，**不会**被提交。
+> - QWeather 私钥请放进 `secrets/`（`compose.yaml` 已把该目录**只读**挂到容器内的 `/run/secrets`），然后把 `QWEATHER_PRIVATE_KEY_PATH=/run/secrets/ed25519-private.pem` 写进 `.env.local`。
+> - **Podman 用户同样可用这份 compose**：`podman compose --env-file .env.local up -d --build`，或安装 `podman-compose` 后 `podman-compose --env-file .env.local up -d --build`。
+
+### 构建（不用 compose）
 
 ```bash
 git clone https://github.com/WillFunniers/Flame-cn.git
@@ -164,11 +217,13 @@ docker run -d --name flame-cn -p 5005:5005 \
 
 ### docker compose（长期运行推荐）
 
-在任意目录新建 `compose.yaml`：
+直接使用仓库自带的 [`compose.yaml`](compose.yaml) —— 用法见上面的 [用 compose.yaml 一键部署](#用-composeyaml-一键部署推荐)。
+如果你不想用仓库里的文件，也可以自己写一份最小 compose：
 
 ```yaml
 services:
   flame-cn:
+    build: { context: ., dockerfile: .docker/Dockerfile }
     image: flame-cn:v2.4.0-zh.3
     container_name: flame-cn
     restart: unless-stopped
@@ -183,7 +238,7 @@ services:
 ```bash
 export DATA_DIR="$HOME/flame-data"
 export FLAME_PASSWORD='换成你自己的强密码'
-docker compose up -d
+docker compose up -d --build
 docker compose logs -f
 docker compose down          # 删除容器；DATA_DIR 不受影响
 ```
@@ -327,6 +382,20 @@ openssl pkey -pubout -in ed25519-private.pem > ed25519-public.pem
 chmod 600 ed25519-private.pem
 cat ed25519-public.pem        # 把这段公钥粘贴到和风天气控制台
 ```
+
+> **用仓库自带的 [`compose.yaml`](compose.yaml) 时更简单**：直接在仓库目录里生成，放进 `secrets/`
+> （该目录首次 `up` 时会自动创建，且已写入 `.gitignore`）：
+>
+> ```bash
+> mkdir -p secrets
+> openssl genpkey -algorithm ED25519 -out secrets/ed25519-private.pem
+> openssl pkey -pubout -in secrets/ed25519-private.pem > ed25519-public.pem
+> chmod 600 secrets/ed25519-private.pem
+> cat ed25519-public.pem
+> ```
+>
+> 然后在 `.env.local` 里把 `QWEATHER_PRIVATE_KEY_PATH` 设为 `/run/secrets/ed25519-private.pem` —— 
+> `compose.yaml` 已经把 `secrets/` **只读**挂到了容器的 `/run/secrets`，不需要再改 compose 文件。
 
 **第 2 步 — 在[和风天气控制台](https://console.qweather.com)创建 JWT 凭据**
 

@@ -3,3 +3,8 @@ data
 public
 !client/public
 client/build
+
+# 用户自己的配置与密钥 —— 绝不入库
+.env.local
+flame-data/
+secrets/
