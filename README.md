@@ -416,31 +416,25 @@ loginctl enable-linger "$USER"     # 未登录时也能启动
 
 > 不配置 QWeather 时，Flame 的默认天气源仍是上游的 WeatherAPI.com（在设置页填 key），或干脆关掉天气组件。**缺少 QWeather 配置不会让容器启动失败。**
 
-### 推荐方式：Ed25519 JWT
+配置分三步：**第 1、2 步与部署方式无关**，第 3 步按你用的方式选一种。
 
-**第 1 步 — 生成密钥对（在你自己的机器上）**
+| 步骤 | 内容 |
+|---|---|
+| 1 | 在本机生成 Ed25519 密钥对 |
+| 2 | 把**公钥**上传到和风天气控制台，抄下 4 个值 |
+| 3 | 把 4 个值 + 私钥交给容器 → [方式 A：面板](#方式-a面板arcane--portainer--dockge--最省事) · [方式 B：compose](#方式-bcompose命令行) · [方式 C：docker-run](#方式-cdocker-run不用-compose) |
+
+### 第 1 步 — 生成密钥对（在你自己的机器上）
 
 ```bash
 mkdir -p ~/qweather && cd ~/qweather
 openssl genpkey -algorithm ED25519 -out ed25519-private.pem
 openssl pkey -pubout -in ed25519-private.pem > ed25519-public.pem
 chmod 600 ed25519-private.pem
-cat ed25519-public.pem        # 把这段公钥粘贴到和风天气控制台
+cat ed25519-public.pem        # 复制这段公钥，下一步粘贴到控制台
 ```
 
-> **用仓库自带的 [`compose.yaml`](compose.yaml) 时更简单**：直接在仓库目录里生成，放进 `secrets/`
-> （该目录首次 `up` 时会自动创建，且已写入 `.gitignore`）：
->
-> ```bash
-> mkdir -p secrets
-> openssl genpkey -algorithm ED25519 -out secrets/ed25519-private.pem
-> openssl pkey -pubout -in secrets/ed25519-private.pem > ed25519-public.pem
-> chmod 600 secrets/ed25519-private.pem
-> cat ed25519-public.pem
-> ```
->
-> 然后在 `.env.local` 里把 `QWEATHER_PRIVATE_KEY_PATH` 设为 `/run/secrets/ed25519-private.pem` —— 
-> `compose.yaml` 已经把 `secrets/` **只读**挂到了容器的 `/run/secrets`，不需要再改 compose 文件。
+> 🔐 **私钥永远不要上传、不要提交、不要贴到聊天里。** 进入控制台的只有公钥。
 
 **第 2 步 — 在[和风天气控制台](https://console.qweather.com)创建 JWT 凭据**
 
@@ -451,7 +445,75 @@ cat ed25519-public.pem        # 把这段公钥粘贴到和风天气控制台
 5. 在「设置」里复制 **API Host**（形如 `abcxyz.xy.qweatherapi.com`）与 **开发者 ID**（Q 开头 10 位）
 6. 在项目页面复制 **项目 ID**
 
-**第 3 步 — 写一个 env 文件（不要用 `-e` 传凭据）**
+**第 3 步 — 按部署方式选一种**
+
+#### 方式 A：面板（Arcane / Portainer / Dockge）—— 最省事
+
+面板里 compose 的 `./secrets` 是相对**面板自己的项目目录**的，把私钥塞进去很别扭。用**宿主机绝对路径**更省心：
+
+1. 在宿主机建一个固定的密钥目录，把私钥放进去：
+
+```bash
+mkdir -p /srv/flame-secrets
+cp ~/qweather/ed25519-private.pem /srv/flame-secrets/
+chmod 600 /srv/flame-secrets/ed25519-private.pem
+```
+
+2. 在面板的**变量**里加这些（Arcane：Customization → **Variables**；Portainer：stack 的 Environment variables）：
+
+```
+FLAME_PASSWORD=你的强密码
+DATA_DIR=/srv/flame-data
+QWEATHER_SECRETS_DIR=/srv/flame-secrets
+QWEATHER_API_HOST=你的专属APIHost
+QWEATHER_AUTH_MODE=jwt
+QWEATHER_KEY_ID=凭据ID
+QWEATHER_DEVELOPER_ID=开发者ID
+QWEATHER_PROJECT_ID=项目ID
+QWEATHER_PRIVATE_KEY_PATH=/run/secrets/ed25519-private.pem
+```
+
+3. 重新部署（面板会重建容器，`DATA_DIR` 数据不受影响）
+4. Flame 界面 → 设置 →「天气」→ **天气服务 = 和风天气** → 保存
+
+> ⚠️ **第 4 步不能省。** 环境变量只代表"凭据可用"；**实际用哪个天气源由设置页决定**，默认仍是上游 WeatherAPI.com。
+> 只配环境变量而不切换，`/api/weather/status` 会显示 `qweather.configured: true` 但天气仍然不出来。
+
+> `QWEATHER_SECRETS_DIR` 是 [`compose.yaml`](compose.yaml) 里的变量，默认 `./secrets`（相对 compose 文件）。
+> **面板用户请把它设成宿主机绝对路径**，私钥就不必放进面板的项目目录。
+> 面板**不要**传 `--env-file`（不支持该参数），变量填在面板里即可。
+
+#### 方式 B：compose（命令行）
+
+1. 把私钥放进仓库旁的 `secrets/`（首次 `up` 会自动创建；该目录已在 `.gitignore` 中）：
+
+```bash
+mkdir -p secrets
+cp ~/qweather/ed25519-private.pem secrets/
+chmod 600 secrets/ed25519-private.pem
+```
+
+2. 写 `.env.local`（`cp .env.example .env.local` 后编辑）：
+
+```
+FLAME_PASSWORD=你的强密码
+QWEATHER_API_HOST=你的专属APIHost
+QWEATHER_AUTH_MODE=jwt
+QWEATHER_KEY_ID=凭据ID
+QWEATHER_DEVELOPER_ID=开发者ID
+QWEATHER_PROJECT_ID=项目ID
+QWEATHER_PRIVATE_KEY_PATH=/run/secrets/ed25519-private.pem
+```
+
+3. 重新部署：
+
+```bash
+docker compose --env-file .env.local up -d
+```
+
+#### 方式 C：docker run（不用 compose）
+
+把私钥文件只读挂到容器内 `/run/secrets/` 下的某个路径，并让 `QWEATHER_PRIVATE_KEY_PATH` 指向它：
 
 ```bash
 cat > ~/qweather/qweather.env <<'EOF'
@@ -463,37 +525,36 @@ QWEATHER_PROJECT_ID=<project-id>
 QWEATHER_PRIVATE_KEY_PATH=/run/secrets/qweather_ed25519.pem
 EOF
 chmod 600 ~/qweather/qweather.env
-```
 
-**第 4 步 — 启动容器，把私钥以只读方式挂进去**
-
-```bash
-# Docker
 docker rm -f flame-cn
 docker run -d --name flame-cn -p 5005:5005 --restart unless-stopped \
-  -e PASSWORD='换成你自己的强密码' \
+  -e PASSWORD='你的强密码' \
   --env-file ~/qweather/qweather.env \
   -v ~/qweather/ed25519-private.pem:/run/secrets/qweather_ed25519.pem:ro \
   -v "$DATA_DIR":/app/data \
-  flame-cn:v2.4.0-zh.3
-
-# Podman
-podman rm -f flame-cn
-podman run -d --name flame-cn -p 5005:5005 \
-  -e PASSWORD='换成你自己的强密码' \
-  --env-file ~/qweather/qweather.env \
-  -v ~/qweather/ed25519-private.pem:/run/secrets/qweather_ed25519.pem:ro \
-  -v "$DATA_DIR":/app/data \
-  flame-cn:v2.4.0-zh.3
+  ghcr.io/willfunniers/flame-cn:v2.4.0-zh.3
 ```
 
-**第 5 步 — 在界面里选用**
+> 不要用 `-e QWEATHER_...=值` 逐个传 —— 那样凭据会明文出现在 `ps`、`docker inspect` 和 shell 历史里。
+> 用 `--env-file`（如上）或面板变量。
 
-设置 →「天气」→ **天气服务 = 和风天气** → 保存。状态显示「已配置」即成功。
+**最后（三种方式都一样）**：Flame 界面 → 设置 →「天气」→ **天气服务 = 和风天气** → 保存，显示「已配置」即成功。
 
 > ⚠️ **`QWEATHER_API_HOST` 必须是控制台给你的专属 Host。** 旧的公共地址
 > `api.qweather.com` / `devapi.qweather.com` / `geoapi.qweather.com` 已被和风天气逐步停用，
 > 本版会**直接拒绝**这些地址（状态显示「未配置」），**不会**静默回落到公共地址。
+
+### 排错：天气显示「未配置」或没数据
+
+| 症状 | 原因 / 处理 |
+|---|---|
+| 状态显示「未配置」 | `QWEATHER_AUTH_MODE` 未设或值不对（**必填**）。JWT 模式还要求 `KEY_ID`/`DEVELOPER_ID`/`PROJECT_ID`/`PRIVATE_KEY_PATH` 四项齐全 |
+| **环境变量都填对了、状态里 `qweather.configured` 也是 `true`，但天气就是不出来**（手动更新报 `Weather provider is not configured`，HTTP 500） | **还差最后一步：去设置页把「天气服务」切成「和风天气」并保存。** 环境变量只代表"凭据可用"，**用不用这个源由设置页决定**，默认仍是上游 WeatherAPI.com |
+| 状态「未配置」但你确实填了 Host | 用的是旧公共地址（`api.qweather.com` 等），会被直接拒绝 —— 换成专属 Host |
+| 容器日志报私钥读不到 / 权限错误 | `QWEATHER_PRIVATE_KEY_PATH` 与挂载目标不一致，或容器内不可读。确认路径一致、宿主机上 `chmod 600`、挂载带 `:ro` |
+| 认证失败（上游返回 HTTP 401） | 凭据 ID / 开发者 ID / 项目 ID 抄错，或公钥没有成功上传到控制台 |
+| 状态「已配置」但天气是 0°C 或空白 | 检查设置页的**经纬度**（纬度必须在 -90~90），改完点一次「立即更新」 |
+| 想让面板里的私钥换位置 | 只需改 `QWEATHER_SECRETS_DIR`，然后重新部署 |
 
 ### 兼容方式：只用 API Key
 
